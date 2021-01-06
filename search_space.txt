@@ -1,0 +1,12 @@
+{
+	"kernels": ['identity',
+		    '3xdepthwise',
+		    '5xdepthwise',
+		    '3xdilated',
+		    '3xmax',
+		    '3xaverage',
+		    '3xsqueezeexicte',
+		    '3xinvmobile',
+		    '5xinvmobile'],
+	"filters": [64,128,256]
+}
