@@ -119,9 +119,7 @@ def check_inputs_shapes(inputs):
     shapes = []
     for _, input in inputs.items():
         shapes.append(tuple(input.get_shape().as_list()))
-    #print('Shapes before set: {}'.format(shapes))
     shapes = list(set(shapes))
-    #print('Shapes after set: {}'.format(shapes))
     if len(shapes) != 1:
         valid = False
     return valid
@@ -139,9 +137,7 @@ def get_unique_input_shape(inputs):
     shapes = []
     for _, input in inputs.items():
         shapes.append(tuple(input.get_shape().as_list()))
-    print('Shapes before set: {}'.format(shapes))
     shapes = list(set(shapes))
-    print('Shapes after set: {}'.format(shapes))
     if len(shapes) != 1:
         return None
     return shapes[0]
@@ -165,7 +161,6 @@ def get_inputs_shape_dictionary(inputs):
         if input_h < smallest:
             smallest_shape = tuple(input.get_shape().as_list())
         shapes[key] = tuple(input.get_shape().as_list())
-    print('Shapes dictionary: {}'.format(shapes))
 
     return shapes, smallest_shape
 
@@ -223,7 +218,6 @@ def remove_later_blocks_from_inputs(possible_inputs, id):
     skimmed_inputs = {}
     # Iterate over all possible inputs
     for key, value in possible_inputs.items():
-        #print('Input: {}'.format(key))
         # If input comes from previous cells is ok to keep it
         if 'block' not in key:
             skimmed_inputs[key] = value

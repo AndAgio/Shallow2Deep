@@ -1376,34 +1376,64 @@ class CellStructure():
 
 
 class ModelBuilder():
+    """
+    Class that defines the structure of a neural network and builds it.
+    During initialization is mandatory to pass the cells settings, the input
+    tensor, the strides to use and the settings available in settings_parser.
+    """
     def __init__(self, cells_settings, filters_list, strides_list,
                  settings, n_blocks=5, n_blocks_per_block=2):
+        '''
+        Initialization method. Parameters are stored and the model is built
+        from the settings.
+        Params:
+            - cells_settings: List of cell settings that uniquely defines
+                              the model structure.
+            - filters_list: List of integer that defines the filters to
+                            use in each cell of the model.
+            - strides_list: List of integer that defines the strides value
+                            to use in each cell of the model.
+            - settings: Settings defined in the settings_parser file.
+        '''
+        # Store hyperparameters
         self.settings = settings
         self.filters_list = filters_list
         self.strides_list = strides_list
+        # Build search space and model input
         self.search_space = SearchSpace(settings.search_space_path)
         self.input_shape = (settings.img_shape,
                             settings.img_shape,
                             settings.img_channels)
         self.model_input = keras.Input(shape=self.input_shape, name="img")
+        # Build the model
         self.initialize(cells_settings, n_blocks, n_blocks_per_block)
         # Add global weight decay if specified
         if self.settings.weight_decay is not None:
-            print('Setting global weight decay factor...')
             self.add_global_weight_decay()
         # Parameters needed for evolution
         self.to_train = True
         self.previous_name = None
 
     def initialize(self, cells_settings, n_blocks=5, n_blocks_per_block=2):
-        #blockPrint()
+        '''
+        Method used to build a model from its settings.
+        Params:
+            - cells_settings: List of cell settings that uniquely defines
+                              the model structure.
+            - n_blocks: Number of blocks to use in each cell. This is used
+                        if cells settings are None (the model needs to be
+                        built randomly).
+            - n_blocks: Number of subblocks to use in each block. This is
+                        used if cells settings are None (the model needs
+                        to be built randomly).
+        '''
+        # Define empty cells list
         self.cells = []
         self.cells_descriptors = []
         self.inputs_dict = {'model_input': self.model_input}
+        # Iterate over the cell settings
         for index, cell_settings in enumerate(cells_settings):
-            print('Building new cell...')
-            print('Input dictionary for cell {}: {}'.format(index, self.inputs_dict))
-            print(cell_settings)
+            # Build the cell from its settings
             self.cells.append(CellStructure(str(index),
                                             self.inputs_dict,
                                             self.search_space,
@@ -1412,35 +1442,77 @@ class ModelBuilder():
                                             n_blocks_per_block=n_blocks_per_block,
                                             n_filters=self.filters_list[index],
                                             stride=self.strides_list[index]))
+            # Append its descriptor and its output to the model descriptor
+            # and the future inputs respectively.
             self.cells_descriptors.append(self.cells[index].get_cell_settings())
-            self.inputs_dict['cell_{}_out'.format(index)] = self.cells[index].get_output()
+            self.inputs_dict['cell_{}_out'.format(index)] = self.cells[index].\
+                                                            get_output()
+            # Define how many inputs will be kept for future cells
+            # and remove older inputs.
             if 'model_input' in self.inputs_dict.keys():
                 n_keys_to_keep = 1
             else:
                 n_keys_to_keep = 2
             self.remove_shallow_outputs_from_input_dict(n_keys_to_keep=n_keys_to_keep)
-        print('Model cells: {}'.format(self.cells))
+        # After all cells have been added, get the last output
+        # as the feature extractor output
         self.last_output = self.cells[-1].get_output()
-        #print(last_output)
+        # Add the classification block and build the final keras model
         self.add_classification_layer()
-        self.model = keras.Model(self.model_input, self.output, name='Model_from_cells')
-        #enablePrint()
+        self.model = keras.Model(self.model_input,
+                                 self.output,
+                                 name='Model_from_cells')
 
     def add_classification_layer(self):
-        global_pooling_out = GlobalAveragePooling2D(name='classification_global_pooling')(self.last_output)
-        self.output = Dense(self.settings.classes, activation='softmax', name='classification_out')(global_pooling_out)
+        '''
+        Method used to add the classification block (i.e. global pooling
+        and fully connected with softmax).
+        '''
+        global_pooling_out = GlobalAveragePooling2D(name=\
+                    'classification_global_pooling')(self.last_output)
+        self.output = Dense(self.settings.classes,
+                            activation='softmax',
+                            name='classification_out')(global_pooling_out)
 
     def add_global_weight_decay(self):
+        '''
+        Method used to add weight decay to all convolutional layers
+        of the model after the model has already been built.
+        '''
+        # Iterate over each layer
         for layer in self.model.layers:
-            if isinstance(layer, keras.layers.Conv2D) or isinstance(layer, keras.layers.Dense):
-                layer.add_loss(lambda: keras.regularizers.l2(self.settings.weight_decay)(layer.kernel))
+            # If it is a convolutional or fully connected layer
+            # add kernel regularizer.
+            if isinstance(layer, keras.layers.Conv2D) or \
+                isinstance(layer, keras.layers.Dense):
+                layer.add_loss(lambda: keras.regularizers.l2(
+                                    self.settings.weight_decay)(layer.kernel))
+            # Otherwise add bias regularizer.
             if hasattr(layer, 'bias_regularizer') and layer.use_bias:
-                layer.add_loss(lambda: keras.regularizers.l2(self.settings.weight_decay)(layer.bias))
+                layer.add_loss(lambda: keras.regularizers.l2(
+                                    self.settings.weight_decay)(layer.bias))
 
     def add_new_cell(self, cell_settings=None, filters=64, strides=1,
                      n_blocks=5, n_blocks_per_block=2):
-        print('Adding new cell to the model...')
+        '''
+        Method used to add a new cell to the model. The cell can be
+        added having certain structure or being a random cell,
+        but it will always be added as the last cell.
+        Params:
+            - cell_settings: Dictionary that defines the settings of
+                             the cell to be added to the model.
+            - filters: Number of filters to use in convolution
+                       operations of the new cell.
+            - strides: Defines the stride of the new cell. Either 1 or 2.
+            - n_block: Number of blocks that will be used to build
+                       the new cell.
+            - n_blocks_per_block: Number of subblocks that will be
+                                  used to build the new cell.
+        '''
+        # Get a new name for the cell.
         new_cell_name = self.get_new_cell_name()
+        # Build the new cell from settings and append it to the list
+        # of cells that constitute the model.
         self.cells.append(CellStructure(new_cell_name,
                                         self.inputs_dict,
                                         self.search_space,
@@ -1449,105 +1521,205 @@ class ModelBuilder():
                                         n_blocks_per_block=n_blocks_per_block,
                                         n_filters=filters,
                                         stride=strides))
+        # Append its descriptor and its output to the model descriptor
+        # and the future inputs respectively.
         self.cells_descriptors.append(self.cells[-1].get_cell_settings())
         self.inputs_dict['cell_{}_out'.format(new_cell_name)] = self.cells[-1].get_output()
+        # Define how many inputs will be kept for future cells
+        # and remove older inputs.
         if 'model_input' in self.inputs_dict.keys():
             n_keys_to_keep = 1
         else:
             n_keys_to_keep = 2
         self.remove_shallow_outputs_from_input_dict(n_keys_to_keep=n_keys_to_keep)
-        print('Model cells: {}'.format(self.cells))
+        # Update model output since the last cell is new.
         self.last_output = self.cells[-1].get_output()
-        # print(last_output)
         self.add_classification_layer()
         self.model = keras.Model(self.model_input, self.output, name='Model_from_cells')
 
     def add_new_block_to_cell(self, cell_name, block_settings=None):
-        print('\n\n\n\n\nAdding new block to existing cell...')
+        '''
+        Method used to add a new block to a specific cell of the model.
+        Params:
+            - cell_name: String identifying the name of the cell to
+                         expand with the new block.
+            - block_settings: Dictionary that defines the settings of
+                              the block to be added.
+        '''
+        # Find the cell index corresponding to the passed name
         cell_index = self.get_cell_index_from_name(cell_name)
         cell_to_expand = self.cells[cell_index]
+        # Invoke Cell method to add the block from its settings
         cell_to_expand.add_new_block(block_settings)
+        # Reinitialize the model. This is done in order to update
+        # links between cells and blocks. Otherwise the model is broken.
         self.initialize(self.cells_descriptors)
-        print('...Finished adding new block to existing cell\n\n\n\n\n')
 
     def mutate_block_in_cell(self, cell_name, block_id=None):
-        print('\n\n\n\n\nMutating block of existing cell...')
+        '''
+        Method used to mutate a block in a cell. The cell must be specified,
+        while the block can be picked randomly.
+        Params:
+            - cell_name: String identifying the name of the cell to mutate.
+            - block_id: ID of the block to mutate. If None a random block
+                        is mutated.
+        '''
+        # Get mutation probability from the settings
         link_mutation_prob = self.settings.links_mut_p
         operation_mutation_prob = self.settings.ops_mut_p
+        # Get cell from its name
         cell_index = self.get_cell_index_from_name(cell_name)
         cell_to_mutate = self.cells[cell_index]
+        # If the block id is None randomly selects a block to mutate.
         if block_id is None:
             all_ids = cell_to_mutate.get_all_blocks_ids()
             block_id = random.choice(all_ids)
-        cell_to_mutate.mutate_block(block_id, link_mutation_prob, operation_mutation_prob)
+        # Invoke the Cell method to mutate the block
+        cell_to_mutate.mutate_block(block_id,
+                                    link_mutation_prob,
+                                    operation_mutation_prob)
+        # Reinitialize the model. This is done in order to update
+        # links between cells and blocks. Otherwise the model is broken.
         self.initialize(self.cells_descriptors)
-        print('...Finished mutating block of existing cell\n\n\n\n\n')
 
     def update_cells_after(self, cell_index):
+        '''
+        Method used to update cells of the model after a certain index.
+        This method is out of date since we always use initialize to quickly
+        rebuild the model after a modification of a cell is made.
+        Params:
+            - cell_index: Index of the cell from which we need
+                          to update the model.
+        '''
+        # Iterate over the cells after the passed index
         for index in range(cell_index, len(self.cells)):
-            print('\n\nUpdating cell {}...'.format(index))
-            print('Input dictionary for cell {}: {}'.format(index, self.cells[index].inputs_dictionary))
-            print('Cell settings: {}'.format(self.cells[index].cell_settings))
-            print('N blocks: {}'.format(self.cells[index].n_blocks))
+            # Rebuild the cell from its previous settings
             self.cells[index] = CellStructure(str(index),
-                                              self.cells[index].inputs_dictionary,
+                                              self.cells[index].\
+                                                    inputs_dictionary,
                                               self.search_space,
-                                              cell_settings=self.cells[index].cell_settings,
+                                              cell_settings=self.cells[index].\
+                                                    cell_settings,
                                               n_blocks=self.cells[index].n_blocks,
-                                              n_blocks_per_block=self.cells[index].n_blocks_per_block,
+                                              n_blocks_per_block=self.cells[index].\
+                                                    n_blocks_per_block,
                                               n_filters=self.filters_list[index],
                                               stride=self.strides_list[index])
+        # Update model output since the last cell is new.
         self.last_output = self.cells[-1].get_output()
         self.add_classification_layer()
         self.model = keras.Model(self.model_input, self.output, name='Model_from_cells')
 
     def get_model(self):
+        '''
+        Method used to extract the keras model from the ModelBuilder object.
+        '''
         return self.model
 
     def print_summary(self):
+        '''
+        Helper method to print the keras summary avoiding to write print.
+        '''
         print(self.model.summary())
 
     def plot_model_to_file(self, plot_name):
+        '''
+        Method used to plot the model structure in the log folder
+        where all models are printed.
+        Params:
+            - plot_name: Name of the file to be stored (not path).
+        '''
+        # Get path of the log and plots folder from settings
         log_path = os.path.join(os.getcwd(), self.settings.log_folder)
         plot_path = os.path.join(log_path, 'plots')
+        # Make the folder if it doesn't exist
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
         file_path = os.path.join(plot_path, plot_name)
+        # Plot the model with its name
         plot_model(self.model, to_file=file_path,
                    show_shapes=False, show_layer_names=False)
 
     def remove_shallow_outputs_from_input_dict(self, n_keys_to_keep):
+        '''
+        Method used to remove shallow cells outputs from the list of
+        possible inputs, depending on the parameter n_keys_to_keep.
+        Params:
+            - n_keys_to_keep: Number of inputs to keep for deeper cells to use.
+        '''
+        # Get the keys of the available inputs.
         all_keys = [key for key, _ in self.inputs_dict.items()]
+        # Keys to keep are last n_keys_to_keep keys. All others are to remove.
         keys_to_remove = all_keys[:-n_keys_to_keep]
+        # Remove them from inputs.
         for key in keys_to_remove:
             self.inputs_dict.pop(key)
 
     def get_model_descriptor(self):
+        '''
+        Method used to extract the model descriptor list from the ModelBuilder.
+        '''
         copied_desc = copy.deepcopy(self.cells_descriptors)
         return copied_desc
 
     def get_new_cell_name(self):
+        '''
+        Method used to get the smallest unused cell name.
+        This is used when a new cell is added.
+        '''
         return str(int(self.cells[-1].name) + 1)
 
     def get_cell_index_from_name(self, name_to_find):
+        '''
+        Method used to get the index of the cell in the cells list
+        from the name of the cell.
+        Params:
+            - name_to_find: String identifying the name of the cell to find.
+        Returns:
+            - Integer, index of the found cell in the self.cells list.
+              None if no cell is found having the required name.
+        '''
         index = 0
         for cell in self.cells:
             if cell.name == name_to_find:
-                print('Cell with name {} found at index {}'.format(name_to_find, index))
                 return index
             index += 1
         return None
 
     def set_previous_name(self, old_name):
+        '''
+        Method used to set the previous name of a model if this is cloned.
+        This is helpful during evolution where we need to avoid training
+        models twice.
+        Params:
+            - old_name: Name of the model which is being cloned.
+        '''
         self.previous_name = old_name
 
     def get_previous_name(self):
+        '''
+        Method used to get the previous name of a model if this is cloned.
+        This is helpful during evolution where we need to avoid training
+        models twice.
+        '''
         return self.previous_name
 
     def set_to_train(self, to_train=True):
+        '''
+        Method used to set the flag indicating if this model needs
+        to be trained or not. This is helpful during evolution,
+        where we need to avoid training models twice.
+        Params:
+            - to_train: Boolean defining if the model needs training or not.
+        '''
         self.to_train = to_train
 
     def get_to_train(self):
+        '''
+        Method used to get the flag indicating if this model needs
+        to be trained or not. This is helpful during evolution,
+        where we need to avoid training models twice.
+        '''
         return self.to_train
 
 if __name__ == '__main__':
@@ -1574,7 +1746,7 @@ if __name__ == '__main__':
     n_blocks_per_block = 1
 
     # Build the model with the helper
-    blockPrint()
+    #blockPrint()
     model_helper = ModelBuilder(cells_settings=[None for _ in range(n_cells)],
                                 filters_list=filt_list,
                                 strides_list=strides_list,
@@ -1582,7 +1754,7 @@ if __name__ == '__main__':
                                 n_blocks=n_blocks,
                                 n_blocks_per_block=n_blocks_per_block)
     model_descriptor = model_helper.get_model_descriptor()
-    enablePrint()
+    #enablePrint()
     print('\nModel descriptor: {}'.format(model_descriptor))
     # Save plot of model to file
     plot_name = 'model_scratch_before_mutate_block.png'
@@ -1612,7 +1784,7 @@ if __name__ == '__main__':
 
 
     # Try reconstruct model from cells settings
-    print('Reconstruct model without added cell...')
+    print('\nReconstruct model without added cell...')
     print('Model descriptor: {}'.format(model_descriptor))
     #blockPrint()
     new_model_h = ModelBuilder(cells_settings=model_descriptor,
@@ -1623,9 +1795,9 @@ if __name__ == '__main__':
                                n_blocks_per_block=n_blocks_per_block)
     #enablePrint()
     # Save plot of model to file
-    print('Plotting reconstructed model...')
+    print('\nPlotting reconstructed model...')
     plot_name = 'model_reconstructed.png'
     new_model_h.plot_model_to_file(plot_name)
 
-    print('Getting memory footprint...')
+    print('\nGetting memory footprint...')
     print('Memory footprint: {:.2f} MBs'.format(get_memory_footprint(new_model_h.get_model())))
