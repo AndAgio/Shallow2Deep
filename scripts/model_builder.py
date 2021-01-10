@@ -1655,6 +1655,29 @@ class ModelBuilder():
         for key in keys_to_remove:
             self.inputs_dict.pop(key)
 
+    def set_not_trainable_cells(self, cell_index):
+        '''
+        Method used to set shallow cells (already trained) to be non trainable.
+        Params:
+            - cell_index: Index of the cell that is being searched. All
+                          previous cells are going to be set as non trainable.
+        '''
+        # Build list of names of cells to be set as not trainable
+        non_trainable_cells_list = ['cell_{}'.format(i) for i in range(cell_index)]
+        # Iterate over each layer
+        for layer in self.model.layers:
+            # Find if this layer is a layer that needs to be set as not trainable
+            print('\nLayer name: {} -> Non train cells: {}'.format(layer.name, non_trainable_cells_list))
+            to_train = True
+            for cell_name in non_trainable_cells_list:
+                if cell_name in layer.name and not 'adjust' in layer.name:
+                    to_train = False
+            print('to_train is {}'.format(to_train))
+            # If not to train then set it to not trainable
+            if not to_train:
+                layer.trainable = False
+
+
     def get_model_descriptor(self):
         '''
         Method used to extract the model descriptor list from the ModelBuilder.

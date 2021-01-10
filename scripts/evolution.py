@@ -38,7 +38,6 @@ class History():
             for model_ind in range(self.pop_size):
                 name = 'gen_{}_model_{}'.format(gen_ind, model_ind+1)
                 self.history_dict[name] = {'Descriptor': None, 'Accuracy': None, 'Size': None}
-        print('History dictionary: {}'.format(self.history_dict))
 
     def add_generation_models(self, population):
         '''
@@ -143,10 +142,8 @@ class Population():
         self.gen_per_cell = settings.gen_per_cell
         self.pop_size = settings.pop_size
         self.cell_to_search = self.generation // self.gen_per_cell
-        print('Cell to search: {}'.format(self.cell_to_search))
         # Define history object that will track models of different generations
         self.history = History(settings.n_cells, settings.gen_per_cell, settings.pop_size)
-        #blockPrint()
         # Define hyperparameters for filters list and strides list
         self.filters_list = settings.filters_list
         self.strides_list = settings.strides_list
@@ -161,14 +158,16 @@ class Population():
         Method used to initialize the first population. The first population is made of models
         that have a first cell which is random and all other cells that are simple convolutional layers.
         '''
+        print('Generation: {} -> Generating population...'.format(self.generation))
         # Define an empty dictionary that will contain the population builders.
         self.population_dictionary = {}
         # Define how the cells settings should look like for each model in the population.
         # The first cell is built randomly, all other cells are just 3xconv.
         cells_settings = [None]
         for i in range(0, self.n_cells-1):
-            cells_settings.append({'blocks': [{'ID': '0', 'in': ['cell_{}_out'.format(i)], 'ops': ['3xconv']}]})
-        print('Cells settings: {}'.format(cells_settings))
+            cells_settings.append({'blocks': [{'ID': '0',
+                                               'in': ['cell_{}_out'.format(i)],
+                                               'ops': ['3xconv']}]})
         # Initialize the name of the first model as 1 and update them
         index = 1
         # Build random models and check if they can be added to the population
@@ -177,31 +176,25 @@ class Population():
             # The name of each model is of format gen_n_model_m
             name = 'gen_{}_model_{}'.format(self.generation, index)
             # Build the model without printing anything
-            blockPrint()
             new_model_h = ModelBuilder(cells_settings=cells_settings,
                                        filters_list=self.filters_list,
                                        strides_list=self.strides_list,
                                        settings=self.settings,
                                        n_blocks=self.n_blocks,
                                        n_blocks_per_block=self.n_blocks_per_block)
-            enablePrint()
             # Get model descriptor and check that this model is not already in population
             model_descriptor = new_model_h.get_model_descriptor()
             # If model not in population add it and update index
             if not self.model_in_population(model_descriptor):
-                #print('Valid model!')
                 self.population_dictionary[name] = new_model_h
                 index += 1
             # Otherwise don't do anything
             else:
                 pass
-                #print('Not a valid model!')
-        #print('Pop dictionary: {}'.format(self.population_dictionary))
         # Plot population's models in the generation_0 log folder
         self.plot_models_of_generation()
         # Update history of the models
         self.history.add_generation_models(self.population_dictionary)
-        print('History: {}'.format(self.history.history_dict))
 
     def model_in_population(self, model_descriptor):
         '''
@@ -242,7 +235,7 @@ class Population():
             file_name = 'model_{}.png'.format(name.split('_')[-1])
             file_path = os.path.join(plot_path, file_name)
             plot_model(model_helper.get_model(), to_file=file_path,
-                       show_shapes=False, show_layer_names=False)
+                       show_shapes=False, show_layer_names=True)
 
     def run_evolution(self, data):
         '''
@@ -280,7 +273,6 @@ class Population():
         # Get accuracies of all models belonging to the population and update history correspondingly
         accuracies_dict = self.get_accuracies(test_gen)
         self.history.update_generation_accuracies(accuracies_dict)
-        #print('History dict after fitting: {}'.format(self.history.history_dict))
         # Update generation value
         self.generation += 1
         # Keep only best models inside the population
@@ -290,6 +282,8 @@ class Population():
             # Check first if we need to mutate the same cell or start evolving the next cell
             changing_cell = self.check_changing_cell()
             self.get_new_population(new_cell=changing_cell)
+        # Update the history log file
+        self.write_history_log()
         # TO BE DONE:
         # - Introduce criterion selection in get_best_models()
 
@@ -300,16 +294,25 @@ class Population():
         the next generation folder, in order for them to be recovered also in future generations.
         '''
         # Train all models belonging to the population of this generation
+        index_fitting = 1
+        prefix_string = 'Generation: {} -> Fitting population: '.format(self.generation)
         for name, model_helper in self.population_dictionary.items():
+            suffix_string = ' Model {}/{}'.format(index_fitting,
+                                                  len(self.population_dictionary.keys()))
+            print_progress_bar(index_fitting,
+                               len(self.population_dictionary.keys()),
+                               prefix=prefix_string,
+                               suffix=suffix_string,
+                               length=30)
             # Check if the model needs to be trained or not...
             if model_helper.get_to_train():
                 # If so, get the model and train it
                 model = model_helper.get_model()
                 # Define optimizer, metrics and loss first
                 optimizer = keras.optimizers.SGD(lr=self.settings.lr_start,
-                                                    momentum=self.settings.momentum,
-                                                    decay=0.0,
-                                                    nesterov=False)
+                                                 momentum=self.settings.momentum,
+                                                 decay=0.0,
+                                                 nesterov=False)
                 metrics = ['accuracy'] #['accuracy', 'top_k_categorical_accuracy']
                 loss = keras.losses.CategoricalCrossentropy()
                 # Compile model using optimizer, metrics and loss
@@ -317,11 +320,14 @@ class Population():
                               metrics=metrics,
                               loss=loss)
                 # Define path where to save best model and add to callbacks
-                self.gen_folder_trained_models = os.path.join(self.settings.models_folder, 'generation_{}'.format(self.generation))
+                self.gen_folder_trained_models = os.path.join(self.settings.models_folder,
+                                                              'generation_{}'.format(
+                                                                    self.generation))
                 if not os.path.exists(self.gen_folder_trained_models):
                     os.makedirs(self.gen_folder_trained_models)
                 model_name = 'model_{}'.format(name.split('_')[-1])
-                model_path = os.path.join(self.gen_folder_trained_models, '{}_trained.h5'.format(model_name))
+                model_path = os.path.join(self.gen_folder_trained_models,
+                                          '{}_trained.h5'.format(model_name))
                 callbacks = get_standard_callbacks(self.settings, model_path)
                 # Fit model and get the final testing accuracy
                 model.fit(train_gen,
@@ -352,6 +358,8 @@ class Population():
                                           '{}_trained.h5'.format(model_name))
                 # Copy the old h5 file in the new generation folder, with the new name
                 copyfile(old_model_path, model_path)
+            # Update index
+            index_fitting += 1
 
     def get_accuracies(self, test_gen):
         '''
@@ -364,15 +372,23 @@ class Population():
             - Dict containing the accuracies of all models of the population.
         '''
         # Define empty dictionary
+        index_evaluating = 1
+        prefix_string = 'Generation: {} -> Evaluating population: '.format(self.generation)
         accs_dict = {}
         for name, _ in self.population_dictionary.items():
+            suffix_string = ' Model {}/{}'.format(index_evaluating,
+                                                  len(self.population_dictionary.keys()))
+            print_progress_bar(index_evaluating,
+                               len(self.population_dictionary.keys()),
+                               prefix=prefix_string,
+                               suffix=suffix_string,
+                               length=30)
             # Load trained model from h5 file
             model_name = 'model_{}'.format(name.split('_')[-1])
             model_path = os.path.join(self.gen_folder_trained_models, '{}_trained.h5'.format(model_name))
             model = keras.models.load_model(model_path)
             # Get accuracy from loaded model
             loss, acc = model.evaluate(test_gen, verbose=0)
-            print('Model name: {} -> accuracy: {:5.2f}%'.format(name, 100 * acc))
             # Add accuracy to dict of accuracies
             accs_dict[name] = acc
         return accs_dict
@@ -383,14 +399,13 @@ class Population():
         The accuracy of each model is taken from the history.
         ########### TO BE DONE: Add criterion to select best models ##########
         '''
+        print('Generation: {} -> Keeping best models...'.format(self.generation))
         # Get best models' names by accuracy.
         accs_dict = self.history.get_accuracies_of_population(self.population_dictionary)
-        print('Accs dict: {}'.format(accs_dict))
         best_models = heapq.nlargest(self.settings.n_models_to_keep,
                                      accs_dict.items(),
                                      key=operator.itemgetter(1))
         best_models = dict(best_models)
-        print('Best models dictionary: {}'.format(best_models))
         # Remove from the population all the models which are not bests
         index = 0
         while index < len(self.population_dictionary.keys()):
@@ -399,7 +414,6 @@ class Population():
                 del self.population_dictionary[name]
             else:
                 index += 1
-        #print('Population dictionary after removal: {}'.format(self.population_dictionary))
 
     def check_changing_cell(self):
         '''
@@ -412,7 +426,6 @@ class Population():
         # we need to update the cell where we work.
         if self.generation % self.gen_per_cell == 0:
             self.cell_to_search = self.generation // self.gen_per_cell
-            print('Cell to search: {}'.format(self.cell_to_search))
             return True
         else:
             return False
@@ -428,8 +441,8 @@ class Population():
             - new_cell: Boolean that defines if we need to search the
                         same cell (False) or the next (True).
         '''
+        print('Generation: {} -> Generating population...'.format(self.generation))
         if not new_cell:
-            print('Mutate population of the same cell...')
             # First duplicate best models and add them to the new generation
             self.duplicate_previous_best_models()
             # Clone and mutate randomly best models added to the generation
@@ -439,24 +452,24 @@ class Population():
             # Add random models to the population
             index = self.add_random_models(index)
             # Plot models of the new generation
-            print('Pop dictionary: {}'.format(self.population_dictionary))
             self.plot_models_of_generation()
             # Update history of the models
             self.history.add_generation_models(self.population_dictionary)
-            print('History: {}'.format(self.history.history_dict))
         else:
-            print('Randomly build new cell from backbone of best previous models...')
             # Deepen best models
             self.deepen_previous_best_models()
             index = len(self.population_dictionary.keys()) + 1
             # Fill population with random models
             self.add_random_models(index)
             # Plot models of the new generation
-            #print('Pop dictionary: {}'.format(self.population_dictionary))
             self.plot_models_of_generation()
             # Update history of the models
             self.history.add_generation_models(self.population_dictionary)
-            #print('History: {}'.format(self.history.history_dict))
+        # For each model in the population set the non trainable cells,
+        # which are those cells before the actual cell to search.
+        for model_name, model_builder in self.population_dictionary.items():
+            model_builder.set_not_trainable_cells(self.cell_to_search)
+            print(model_builder.model.summary())
 
     def duplicate_previous_best_models(self):
         '''
@@ -473,7 +486,6 @@ class Population():
             old_name = list(self.population_dictionary.keys())[index - 1]
             cells_settings = self.population_dictionary[old_name].get_model_descriptor()
             # Build the cloned models using ModelBuilder from cells settings
-            blockPrint()
             new_model_h = ModelBuilder(cells_settings=cells_settings,
                                        filters_list=self.filters_list,
                                        strides_list=self.strides_list,
@@ -483,13 +495,11 @@ class Population():
             # Cloned models must not be trained and we set their last generation name
             new_model_h.set_to_train(False)
             new_model_h.set_previous_name(old_name)
-            enablePrint()
+
             # Add the cloned models to the new dictionary
             new_population_dictionary[name] = new_model_h
         # Substitute the population dictionary with the new one
         self.population_dictionary = new_population_dictionary
-        print('Pop dictionary after cloning best models: {}'\
-              .format(self.population_dictionary))
 
     def mutate_best_models(self, models_to_clone, index):
         '''
@@ -516,7 +526,6 @@ class Population():
             # Randomly selects a model, build its clone and randomly mutate it
             old_name = random.choice(list(models_to_clone.keys()))
             cells_settings = models_to_clone[old_name].get_model_descriptor()
-            blockPrint()
             new_model_h = ModelBuilder(cells_settings=cells_settings,
                                        filters_list=self.filters_list,
                                        strides_list=self.strides_list,
@@ -524,18 +533,14 @@ class Population():
                                        n_blocks=self.n_blocks,
                                        n_blocks_per_block=self.n_blocks_per_block)
             new_model_h.mutate_block_in_cell(cell_name=str(self.cell_to_search))
-            enablePrint()
             # Check if the model built from mutation is already in population or history
             model_descriptor = new_model_h.get_model_descriptor()
             # If not add it to population and udate index
             if not self.model_in_population(model_descriptor) and \
                     not self.history.check_model_in_history(model_descriptor):
-                print('Valid model!')
-                print('Model name: {}'.format(name))
                 self.population_dictionary[name] = new_model_h
                 index += 1
             else:
-                print('Not a valid model!')
                 pass
             iteration += 1
         # If max iterations reached print a warning message
@@ -563,25 +568,20 @@ class Population():
             old_name = random.choice(list(self.population_dictionary.keys()))
             cells_settings = self.population_dictionary[old_name].get_model_descriptor()
             cells_settings[self.cell_to_search] = None
-            blockPrint()
             new_model_h = ModelBuilder(cells_settings=cells_settings,
                                        filters_list=self.filters_list,
                                        strides_list=self.strides_list,
                                        settings=self.settings,
                                        n_blocks=self.n_blocks,
                                        n_blocks_per_block=self.n_blocks_per_block)
-            enablePrint()
             # Check if the model built  is already in population or history
             model_descriptor = new_model_h.get_model_descriptor()
             # If not add it to population and udate index
             if not self.model_in_population(model_descriptor) and \
                not self.history.check_model_in_history(model_descriptor):
-                print('Valid model!')
-                print('Model name: {}'.format(name))
                 self.population_dictionary[name] = new_model_h
                 index += 1
             else:
-                print('Not a valid model!')
                 pass
             iteration += 1
         # If max iterations reached print a warning message
@@ -610,19 +610,30 @@ class Population():
             # Define random cell settings for the new cell to search
             cells_settings[self.cell_to_search] = None
             # Build the cloned models using ModelBuilder from cells settings
-            blockPrint()
             new_model_h = ModelBuilder(cells_settings=cells_settings,
                                        filters_list=self.filters_list,
                                        strides_list=self.strides_list,
                                        settings=self.settings,
                                        n_blocks=self.n_blocks,
                                        n_blocks_per_block=self.n_blocks_per_block)
-            enablePrint()
             # Add the cloned models to the new dictionary
             new_population_dictionary[name] = new_model_h
         # Substitute the population dictionary with the new one
         self.population_dictionary = new_population_dictionary
-        print('Pop dictionary: {}'.format(self.population_dictionary))
+
+    def write_history_log(self):
+        '''
+        Method used to write the history variable to a log file for each generation.
+        '''
+        # Define file name and open it. It is place in the log folder.
+        file_name = 'history_log.txt'
+        file_path = os.path.join(self.settings.log_folder, file_name)
+        file = open(file_path, "w")
+        # Iterate of history items and write them in the file
+        for model_name, model_resume in self.history.history_dict.items():
+            file.write(str(model_name) + ' -> '+ str(model_resume) + '\n\n')
+        # Close file
+        file.close()
 
 if __name__ == '__main__':
     args = settings_parser.arg_parse()
@@ -634,4 +645,4 @@ if __name__ == '__main__':
     # Run single generation
     #my_population.run_generation(cifar10_data)
     # Run evolution
-    my_population.run_evolution(train_val_data)
+    my_population.run_evolution(cifar10_data)
