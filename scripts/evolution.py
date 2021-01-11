@@ -672,7 +672,7 @@ class Population():
                                                      self.settings.models_folder,
                                                      'generation_{}'.format(generation))
             model_name = 'model_{}'.format(name.split('_')[-1])
-            oòd_model_path = os.path.join(gen_folder_trained_models,
+            old_model_path = os.path.join(gen_folder_trained_models,
                                           '{}_trained.h5'.format(model_name))
             # Define name and path of new h5 file
             best_trained_models_folder = os.path.join(log_path,
