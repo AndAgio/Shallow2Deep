@@ -1667,12 +1667,10 @@ class ModelBuilder():
         # Iterate over each layer
         for layer in self.model.layers:
             # Find if this layer is a layer that needs to be set as not trainable
-            print('\nLayer name: {} -> Non train cells: {}'.format(layer.name, non_trainable_cells_list))
             to_train = True
             for cell_name in non_trainable_cells_list:
                 if cell_name in layer.name and not 'adjust' in layer.name:
                     to_train = False
-            print('to_train is {}'.format(to_train))
             # If not to train then set it to not trainable
             if not to_train:
                 layer.trainable = False

@@ -1,7 +1,7 @@
 import argparse
 
 def arg_parse():
-    parser = argparse.ArgumentParser(description='Style Change Detection')
+    parser = argparse.ArgumentParser(description='Exhaustive Neural Architecture Search')
 
     # Parameters used for network model
     parser.add_argument('--img_shape', default=32, type=int,

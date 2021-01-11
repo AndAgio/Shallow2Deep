@@ -252,6 +252,8 @@ class Population():
             self.run_generation(data)
         # Run last generation with only fitting and survival
         self.run_generation(data, last_gen=True)
+        # Store final best models and their diagrams.
+        self.store_final_bests()
 
     def run_generation(self, data, last_gen=False):
         '''
@@ -639,6 +641,51 @@ class Population():
             file.write(str(model_name) + ' -> '+ str(model_resume) + '\n\n')
         # Close file
         file.close()
+
+    def store_final_bests(self):
+        '''
+        Method used to store the best models of the last generation
+        in a folder by itself. We will both store the h5 files and
+        plot the models structure to make it clear for us which
+        models are best.
+        '''
+        # Define folder for best models
+        log_path = os.path.join(os.getcwd(), self.settings.log_folder)
+        plot_path = os.path.join(log_path, 'best_models/plots')
+        # Make the corresponding folder
+        if not os.path.exists(plot_path):
+            os.makedirs(plot_path)
+        # For each model in the population, get the ModelBuilder object
+        # and use its model in plot_model
+        for name, model_helper in self.population_dictionary.items():
+            # Get model accuracy to use it in the name of the file
+            model_acc = self.history.get_model_accuracy_from_name(name)
+            file_name = 'model_{}_acc_{}.png'.format(name.split('_')[-1],
+                                                     model_acc)
+            # Plot best models structure first
+            file_path = os.path.join(plot_path, file_name)
+            plot_model(model_helper.get_model(), to_file=file_path,
+                       show_shapes=False, show_layer_names=False)
+            # Get previous h5 file and copy it to the best_models folder
+            generation = name.split('_')[1]
+            gen_folder_trained_models = os.path.join(self.settings.log_folder,
+                                                     self.settings.models_folder,
+                                                     'generation_{}'.format(generation))
+            model_name = 'model_{}'.format(name.split('_')[-1])
+            oòd_model_path = os.path.join(gen_folder_trained_models,
+                                          '{}_trained.h5'.format(model_name))
+            # Define name and path of new h5 file
+            best_trained_models_folder = os.path.join(log_path,
+                                                      'best_models/trained-models')
+            if not os.path.exists(best_trained_models_folder):
+                os.makedirs(best_trained_models_folder)
+            file_name = 'trained_model_{}_acc_{}.h5'.format(name.split('_')[-1],
+                                                            model_acc)
+            model_path = os.path.join(best_trained_models_folder,
+                                      file_name)
+            # Copy the old h5 file in the new generation folder, with the new name
+            copyfile(old_model_path, model_path)
+
 
 if __name__ == '__main__':
     args = settings_parser.arg_parse()
