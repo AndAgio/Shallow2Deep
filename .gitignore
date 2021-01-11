@@ -52,6 +52,8 @@ Thumbs.db
 nas-venv/
 log/tensorboard/
 log/models/
+log/trained-models/
 log/*/tensorboard/
 log/*/models/
+log/*/trained-models/
 # scripts/unused code/
