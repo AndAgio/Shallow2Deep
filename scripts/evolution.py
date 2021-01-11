@@ -275,11 +275,11 @@ class Population():
         # Get accuracies of all models belonging to the population and update history correspondingly
         accuracies_dict = self.get_accuracies(test_gen)
         self.history.update_generation_accuracies(accuracies_dict)
-        # Update generation value
-        self.generation += 1
         # Keep only best models inside the population
         self.keep_best_models()
         if not last_gen:
+            # Update generation value
+            self.generation += 1
             # Get new population for the next generation
             # Check first if we need to mutate the same cell or start evolving the next cell
             changing_cell = self.check_changing_cell()
