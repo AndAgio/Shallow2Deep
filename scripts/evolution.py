@@ -222,15 +222,21 @@ class Population():
 
     def plot_models_of_generation(self):
         '''
-        Method used to plot the structure of all models belonging to the current generation.
-        The plot will be stored in the log_folder/plots_folder/generation_n
+        Method used to plot the structure of all models belonging
+        to the current generation. The plot will be stored in the
+        log_folder/plots_folder/generation_n
         '''
-        log_path = os.path.join(os.getcwd(), self.settings.log_folder)
-        plot_path = os.path.join(log_path, self.settings.plot_folder, 'generation_{}'.format(self.generation))
-        # If it is the first time deleaing with generation_n make the corresponding folder
+        log_path = os.path.join(os.getcwd(),
+                                self.settings.log_folder)
+        plot_path = os.path.join(log_path,
+                                 self.settings.plot_folder,
+                                 'generation_{}'.format(self.generation))
+        # If it is the first time deleaing with generation_n
+        # make the corresponding folder
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
-        # For each model in the population, get the ModelBuilder object and use its model in plot_model
+        # For each model in the population, get the ModelBuilder
+        # object and use its model in plot_model
         for name, model_helper in self.population_dictionary.items():
             file_name = 'model_{}.png'.format(name.split('_')[-1])
             file_path = os.path.join(plot_path, file_name)
@@ -291,9 +297,11 @@ class Population():
 
     def fit_population(self, train_gen, test_gen):
         '''
-        Method used to fit all models belonging to the current population. The previous generation
-        best models must not be retrained. Therefore, we need to copy their previous h5 files to
-        the next generation folder, in order for them to be recovered also in future generations.
+        Method used to fit all models belonging to the current population.
+        The previous generation best models must not be retrained.
+        Therefore, we need to copy their previous h5 files to the next
+        generation folder, in order for them to be recovered also
+        in future generations.
         '''
         # Train all models belonging to the population of this generation
         index_fitting = 1
@@ -660,8 +668,8 @@ class Population():
         for name, model_helper in self.population_dictionary.items():
             # Get model accuracy to use it in the name of the file
             model_acc = self.history.get_model_accuracy_from_name(name)
-            file_name = 'model_{}_acc_{}.png'.format(name.split('_')[-1],
-                                                     model_acc)
+            file_name = 'model_{}_acc_{:.3f}.png'.format(name.split('_')[-1],
+                                                         model_acc*100)
             # Plot best models structure first
             file_path = os.path.join(plot_path, file_name)
             plot_model(model_helper.get_model(), to_file=file_path,
@@ -679,8 +687,8 @@ class Population():
                                                       'best_models/trained-models')
             if not os.path.exists(best_trained_models_folder):
                 os.makedirs(best_trained_models_folder)
-            file_name = 'trained_model_{}_acc_{}.h5'.format(name.split('_')[-1],
-                                                            model_acc)
+            file_name = 'trained_model_{}_acc_{:.3f}.h5'.format(name.split('_')[-1],
+                                                                model_acc*100)
             model_path = os.path.join(best_trained_models_folder,
                                       file_name)
             # Copy the old h5 file in the new generation folder, with the new name
