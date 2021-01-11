@@ -1631,7 +1631,7 @@ class ModelBuilder():
         '''
         # Get path of the log and plots folder from settings
         log_path = os.path.join(os.getcwd(), self.settings.log_folder)
-        plot_path = os.path.join(log_path, 'plots')
+        plot_path = os.path.join(log_path, self.settings.plot_folder)
         # Make the folder if it doesn't exist
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)

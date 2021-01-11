@@ -37,13 +37,13 @@ def arg_parse():
                         help='Path of folder where logs are stored')
     parser.add_argument('--search_space_path', type=str, default='../search_space.txt',
                         help="Path of text file containing search space dictionary")
-    parser.add_argument('--models_folder', type=str, default='../log/models/',
+    parser.add_argument('--models_folder', type=str, default='trained-models',
                         help="Path to model file")
-    parser.add_argument('--tensorboard_folder', type=str, default='../log/tensorboard/',
+    parser.add_argument('--tensorboard_folder', type=str, default='tensorboard/',
                         help="Path to tensorboard folder")
-    parser.add_argument('--image_folder', type=str, default='../log/images/',
+    parser.add_argument('--image_folder', type=str, default='images',
                         help="Path to folder containing various images")
-    parser.add_argument('--plot_folder', type=str, default='../log/plots/',
+    parser.add_argument('--plot_folder', type=str, default='plots',
                         help="Path to folder containing plots of CNNs")
 
     # Parameters used for generations and network evolution

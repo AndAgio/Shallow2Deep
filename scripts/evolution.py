@@ -223,10 +223,10 @@ class Population():
     def plot_models_of_generation(self):
         '''
         Method used to plot the structure of all models belonging to the current generation.
-        The plot will be stored in the log_folder/plots/generation_n
+        The plot will be stored in the log_folder/plots_folder/generation_n
         '''
         log_path = os.path.join(os.getcwd(), self.settings.log_folder)
-        plot_path = os.path.join(log_path, 'plots', 'generation_{}'.format(self.generation))
+        plot_path = os.path.join(log_path, self.settings.plot_folder, 'generation_{}'.format(self.generation))
         # If it is the first time deleaing with generation_n make the corresponding folder
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
@@ -320,7 +320,8 @@ class Population():
                               metrics=metrics,
                               loss=loss)
                 # Define path where to save best model and add to callbacks
-                self.gen_folder_trained_models = os.path.join(self.settings.models_folder,
+                self.gen_folder_trained_models = os.path.join(self.settings.log_folder,
+                                                              self.settings.models_folder,
                                                               'generation_{}'.format(
                                                                     self.generation))
                 if not os.path.exists(self.gen_folder_trained_models):
@@ -343,13 +344,15 @@ class Population():
                 old_name = model_helper.get_previous_name()
                 # Get previous h5 file and copy it to the new generation folder
                 old_generation = old_name.split('_')[1]
-                old_gen_folder_trained_models = os.path.join(self.settings.models_folder,
+                old_gen_folder_trained_models = os.path.join(self.settings.log_folder,
+                                                             self.settings.models_folder,
                                                              'generation_{}'.format(old_generation))
                 old_model_name = 'model_{}'.format(old_name.split('_')[-1])
                 old_model_path = os.path.join(old_gen_folder_trained_models,
                                               '{}_trained.h5'.format(old_model_name))
                 # Define name and path of new h5 file
-                self.gen_folder_trained_models = os.path.join(self.settings.models_folder,
+                self.gen_folder_trained_models = os.path.join(self.settings.log_folder,
+                                                              self.settings.models_folder,
                                                               'generation_{}'.format(self.generation))
                 if not os.path.exists(self.gen_folder_trained_models):
                     os.makedirs(self.gen_folder_trained_models)

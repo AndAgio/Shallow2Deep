@@ -59,9 +59,10 @@ def get_standard_callbacks(args, model_path, initializer=False, scheduler=True,
         my_callbacks.append(terminate_nan_callback)
     if board:
         # For tensorboard check if folder is available
-        if not os.path.exists(args.tensorboard_folder):
-            os.makedirs(args.tensorboard_folder)
-        tb_callback = tf.keras.callbacks.TensorBoard(log_dir=args.tensorboard_folder,
+        tensorboard_folder = os.path.join(args.log_folder, args.tensorboard_folder)
+        if not os.path.exists(tensorboard_folder):
+            os.makedirs(tensorboard_folder)
+        tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tensorboard_folder,
                                                      update_freq='epoch')
         my_callbacks.append(tb_callback)
     if storer:
