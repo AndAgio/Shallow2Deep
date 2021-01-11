@@ -69,9 +69,11 @@ def arg_parse():
                         help="Number of blocks that compose each cell")
     parser.add_argument('--n_subblocks_per_block', default=1, type=int,
                         help="Number of sub-blocks that compose each block in each cell")
-    parser.add_argument('--filters_list', nargs='*', default=[16, 32, 32, 64, 64],
+    parser.add_argument('-filters_list', '--filters_list', nargs='*',
+                        default=[16, 32, 32, 64, 64], type=int,
                         help="Number of filters to be used in each cell")
-    parser.add_argument('--strides_list', nargs='*', default=[1, 2, 1, 2, 1],
+    parser.add_argument('-strides_list', '--strides_list', nargs='*',
+                        default=[1, 2, 1, 2, 1], type=int,
                         help="Strides values to be used in each cell")
 
 

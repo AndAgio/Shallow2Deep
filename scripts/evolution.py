@@ -235,7 +235,7 @@ class Population():
             file_name = 'model_{}.png'.format(name.split('_')[-1])
             file_path = os.path.join(plot_path, file_name)
             plot_model(model_helper.get_model(), to_file=file_path,
-                       show_shapes=False, show_layer_names=True)
+                       show_shapes=True, show_layer_names=True)
 
     def run_evolution(self, data):
         '''
