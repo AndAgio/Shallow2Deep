@@ -751,7 +751,8 @@ class CellStructure():
         self.search_space = search_space.copy()
         # Check consistency of the stride
         if stride != 1 and stride != 2:
-            raise ValueError('The chosen value of stride for this cell is not valid!')
+            raise ValueError('The chosen value ({}) of stride for this cell '
+                             'is not valid!'.format(stride))
         self.n_filters = n_filters
         self.stride = stride
         # First check if cell settings are available or not. If they are available
