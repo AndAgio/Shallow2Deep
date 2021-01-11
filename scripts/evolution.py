@@ -299,11 +299,12 @@ class Population():
         for name, model_helper in self.population_dictionary.items():
             suffix_string = ' Model {}/{}'.format(index_fitting,
                                                   len(self.population_dictionary.keys()))
-            print_progress_bar(index_fitting,
-                               len(self.population_dictionary.keys()),
-                               prefix=prefix_string,
-                               suffix=suffix_string,
-                               length=30)
+            #print_progress_bar(index_fitting,
+            #                   len(self.population_dictionary.keys()),
+            #                   prefix=prefix_string,
+            #                   suffix=suffix_string,
+            #                   length=30)
+            print('{} -> {}...'.format(prefix_string, suffix_string))
             # Check if the model needs to be trained or not...
             if model_helper.get_to_train():
                 # If so, get the model and train it
@@ -381,11 +382,12 @@ class Population():
         for name, _ in self.population_dictionary.items():
             suffix_string = ' Model {}/{}'.format(index_evaluating,
                                                   len(self.population_dictionary.keys()))
-            print_progress_bar(index_evaluating,
-                               len(self.population_dictionary.keys()),
-                               prefix=prefix_string,
-                               suffix=suffix_string,
-                               length=30)
+            #print_progress_bar(index_evaluating,
+            #                   len(self.population_dictionary.keys()),
+            #                   prefix=prefix_string,
+            #                   suffix=suffix_string,
+            #                   length=30)
+            print('{} -> {}...'.format(prefix_string, suffix_string))
             # Load trained model from h5 file
             model_name = 'model_{}'.format(name.split('_')[-1])
             model_path = os.path.join(self.gen_folder_trained_models, '{}_trained.h5'.format(model_name))
@@ -472,7 +474,7 @@ class Population():
         # which are those cells before the actual cell to search.
         for model_name, model_builder in self.population_dictionary.items():
             model_builder.set_not_trainable_cells(self.cell_to_search)
-            print(model_builder.model.summary())
+            #print(model_builder.model.summary())
 
     def duplicate_previous_best_models(self):
         '''
@@ -643,7 +645,7 @@ if __name__ == '__main__':
     my_population = Population(args)
 
     # Import cifar10
-    cifar10_data = get_generator_from_cifar(args, split_train=True, small=True)
+    cifar10_data = get_generator_from_cifar(args, split_train=True, small=False)
 
     # Run single generation
     #my_population.run_generation(cifar10_data)
