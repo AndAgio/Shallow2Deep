@@ -1298,12 +1298,30 @@ class CellStructure():
             self.cell_out = Concatenate(name='output_cell_{}'\
                                         .format(self.name))(blocks_out)
         # Check cell's output shape, if it is not proper mutate randomly again.
-        if self.check_ouput_shape(addition=False):
+        # Check also that at least one input comes from the previous cell,
+        # otherwise the previous cell will be dropped during model building.
+        if self.check_ouput_shape(addition=False) and self.at_least_one_input_from_last_cell(cell_settings):
             self.possible_inputs = possible_inputs.copy()
             self.possible_inputs_strings = possible_inputs_strings.copy()
             self.cell_settings = cell_settings.copy()
         else:
             self.mutate_block(id_of_block_to_mutate)
+
+    def at_least_one_input_from_last_cell(self, cell_settings):
+        '''
+        Method used to check if at least one input remains from the
+        previous cell, otherwise the model will drop the last cell.
+        '''
+        previous_cell_index = str(int(self.name) - 1)
+        print('Previous cell index: {}'.format(previous_cell_index))
+        if int(previous_cell_index) < 0:
+            return True
+        for block in cell_settings['blocks']:
+            print('Block: {}'.format(block))
+            if 'cell_{}_out'.format(previous_cell_index) in block['in']:
+                return True
+        return False
+
 
     def get_new_id(self):
         '''

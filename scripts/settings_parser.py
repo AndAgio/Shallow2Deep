@@ -60,6 +60,11 @@ def arg_parse():
     parser.add_argument('--max_iterations', default=1000, type=int,
                         help="Maximum number of iterations used to try mutating previous best models"
                              "for the new generation.")
+    parser.add_argument('--gen_per_batch', default=1, type=int,
+                        help="Number of generations run each time the run_batched_evolution method is called.")
+    parser.add_argument('--start', default='False', type=str,
+                        help="Variable describing if the evolution needs to start"
+                             "from scratch or if it needs to be restored from the last run checkpoint.")
 
 
     # Parameters used for single model building

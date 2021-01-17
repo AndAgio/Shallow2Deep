@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import heapq
 import operator
 import random
+import pickle
+import shutil
 from shutil import copyfile
 import tensorflow as tf
 import keras
@@ -127,8 +129,33 @@ class History():
                 return True
         return False
 
+    def get_latest_generation_run(self):
+        '''
+        Method used to find the last generation that has been run.
+        The last generation is the last having a value for the accuracy.
+        '''
+        latest_generation = -1
+        for model_name, subdict in self.history_dict.items():
+            if subdict['Accuracy'] is not None:
+                latest_generation = int(model_name.split('_')[1])
+        return latest_generation
+
+    def get_descriptors_of_generation(self, gen_index):
+        '''
+        Method used to extract the descriptors of the models belonging
+        to a specific generation, indexed by gen_index.
+        Params:
+            - gen_index: Index of the generation that we want to reload.
+        '''
+        descriptors = {}
+        for model_name, subdict in self.history_dict.items():
+            if 'gen_{}'.format(gen_index) in model_name:
+                name = 'model_{}'.format(model_name.split('_')[-1])
+                descriptors[name] = subdict['Descriptor']
+        return descriptors
+
 class Population():
-    def __init__(self, settings):
+    def __init__(self, settings, restart=False, prev_h=None):
         '''
         Initialization method used to setup the first generation of the evolutionary population.
         Params:
@@ -150,8 +177,12 @@ class Population():
         self.n_cells = settings.n_cells
         self.n_blocks = settings.n_blocks_per_cell
         self.n_blocks_per_block = settings.n_subblocks_per_block
-        # Initialize population
-        self.initialize_population()
+        # Initialize population or recove previous population
+        if restart:
+            self.recover_past(prev_h)
+        else:
+            shutil.rmtree(settings.log_folder, ignore_errors=True)
+            self.initialize_population()
 
     def initialize_population(self):
         '''
@@ -261,6 +292,47 @@ class Population():
         # Store final best models and their diagrams.
         self.store_final_bests()
 
+    def run_batched_evolution(self, data):
+        '''
+        Method used to run the evolutionary algorithm on the population via batches.
+        It starts the evolution for some generation and then stops it.
+        The evolution will then resume where it stopped the next time the function
+        is called. It runs a certain amount of generations per each cell,
+        in order to identify the best configuration for each cell.
+        Params:
+            - data: Tuple containing a train_generator and a validation_generator.
+                    These are the data used to fit the models of a population and
+                    get their performances.
+        '''
+        # Check if this batch of generations is the last one or not.
+        last_batch = (self.generation + self.settings.gen_per_batch >= self.gen_per_cell * self.n_cells)
+        if not last_batch:
+            for generation in range(self.settings.gen_per_batch):
+                self.run_generation(data)
+        if last_batch:
+            # Run n-1 generations with fitting, survival and mutation
+            for generation in range(self.generation, self.gen_per_cell * self.n_cells):
+                self.run_generation(data)
+            # Run last generation with only fitting and survival
+            self.run_generation(data, last_gen=True)
+            # Store final best models and their diagrams.
+            self.store_final_bests()
+            # Delete file containing continuation settings
+            file_path = os.path.join(self.settings.log_folder, 'continuation_settings')
+            file = open(file_path, "rb")
+            args = pickle.load(file)
+            file.close()
+            os.remove(file_path)
+            # Create a new pickle and text file containing the settings of the evolution
+            file_path = os.path.join(args.log_folder, 'completed_evolution_settings')
+            file = open(file_path, "wb")
+            pickle.dump(args, file)
+            file.close()
+            file_path = os.path.join(args.log_folder, 'completed_evolution_settings.txt')
+            file = open(file_path, "wb")
+            file.write(args)
+            file.close()
+
     def run_generation(self, data, last_gen=False):
         '''
         Method used to run a single generation of the evolutionary algorithm used
@@ -283,6 +355,8 @@ class Population():
         self.history.update_generation_accuracies(accuracies_dict)
         # Keep only best models inside the population
         self.keep_best_models()
+        # Update the history log file
+        self.write_history_log()
         if not last_gen:
             # Update generation value
             self.generation += 1
@@ -406,6 +480,8 @@ class Population():
             loss, acc = model.evaluate(test_gen, verbose=0)
             # Add accuracy to dict of accuracies
             accs_dict[name] = acc
+            # Update index
+            index_evaluating += 1
         return accs_dict
 
     def keep_best_models(self):
@@ -510,7 +586,26 @@ class Population():
             # Cloned models must not be trained and we set their last generation name
             new_model_h.set_to_train(False)
             new_model_h.set_previous_name(old_name)
-
+            # Copy the weights of the previous best model to the new model
+            old_generation = old_name.split('_')[1]
+            old_gen_folder_trained_models = os.path.join(self.settings.log_folder,
+                                                         self.settings.models_folder,
+                                                         'generation_{}'.format(old_generation))
+            old_model_name = 'model_{}'.format(old_name.split('_')[-1])
+            print('Previous best name: {}'.format(old_model_name))
+            old_model_path = os.path.join(old_gen_folder_trained_models,
+                                          '{}_trained.h5'.format(old_model_name))
+            print('Previous best path: {}'.format(old_model_path))
+            print('Previous best descriptor: {}'.format(cells_settings))
+            #new_model_h.model.set_weights(old_model_path)
+            old_model = keras.models.load_model(old_model_path)
+            # Copy weights of all cells
+            #layer_index = 0
+            #for layer in new_model_h.model.layers:
+            #    layer.set_weights(old_model.layers[layer_index].get_weights())
+            #    layer_index += 1
+            for layer in old_model.layers:
+                new_model_h.model.get_layer(layer.name).set_weights(layer.get_weights())
             # Add the cloned models to the new dictionary
             new_population_dictionary[name] = new_model_h
         # Substitute the population dictionary with the new one
@@ -555,6 +650,25 @@ class Population():
                     not self.history.check_model_in_history(model_descriptor):
                 self.population_dictionary[name] = new_model_h
                 index += 1
+                # Copy the previous model weights to the new model where they can be copied
+                old_model = models_to_clone[old_name].model
+                # Copy weights of previous cells
+                list_cells_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search)]
+                list_cells_not_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search,
+                                                                             self.n_cells)]
+                print('Cells to copy: {}'.format(list_cells_to_copy))
+                print('\nOld model descriptor: {}'.format(models_to_clone[old_name].get_model_descriptor()))
+                print('New model descriptor: {}\n'.format(new_model_h.get_model_descriptor()))
+                print('\n\nNew model layers:')
+                for layer in new_model_h.model.layers:
+                    print('Layer name: {}'.format(layer.name))
+                print('\n\nOld model layers:')
+                for layer in old_model.layers:
+                    condition = (check_list_of_substring(list_cells_to_copy, layer.name)) and\
+                            (not check_list_of_substring(list_cells_not_to_copy, layer.name))
+                    print('layer.name: {} -> Condition: {}'.format(layer.name, condition))
+                    if condition:
+                        new_model_h.model.get_layer(layer.name).set_weights(layer.get_weights())
             else:
                 pass
             iteration += 1
@@ -596,6 +710,19 @@ class Population():
                not self.history.check_model_in_history(model_descriptor):
                 self.population_dictionary[name] = new_model_h
                 index += 1
+                # Copy the previous model weights to the new model where they can be copied
+                old_model = self.population_dictionary[old_name].model
+                # Copy weights of previous cells
+                list_cells_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search)]
+                list_cells_not_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search,
+                                                                             self.n_cells)]
+                print('Cells to copy: {}'.format(list_cells_to_copy))
+                for layer in old_model.layers:
+                    condition = (check_list_of_substring(list_cells_to_copy, layer.name)) and\
+                            (not check_list_of_substring(list_cells_not_to_copy, layer.name))
+                    print('layer.name: {} -> Condition: {}'.format(layer.name, condition))
+                    if condition:
+                        new_model_h.model.get_layer(layer.name).set_weights(layer.get_weights())
             else:
                 pass
             iteration += 1
@@ -633,6 +760,29 @@ class Population():
                                        n_blocks_per_block=self.n_blocks_per_block)
             # Add the cloned models to the new dictionary
             new_population_dictionary[name] = new_model_h
+            # Copy the previous model weights to the new model where they can be copied
+            old_generation = old_name.split('_')[1]
+            old_gen_folder_trained_models = os.path.join(self.settings.log_folder,
+                                                         self.settings.models_folder,
+                                                         'generation_{}'.format(old_generation))
+            old_model_name = 'model_{}'.format(old_name.split('_')[-1])
+            print('Previous best name: {}'.format(old_model_name))
+            old_model_path = os.path.join(old_gen_folder_trained_models,
+                                          '{}_trained.h5'.format(old_model_name))
+            print('Previous best path: {}'.format(old_model_path))
+            print('Previous best descriptor: {}'.format(cells_settings))
+            old_model = keras.models.load_model(old_model_path)
+            # Copy weights of previous cells
+            list_cells_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search)]
+            list_cells_not_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search,
+                                                                         self.n_cells)]
+            print('Cells to copy: {}'.format(list_cells_to_copy))
+            for layer in old_model.layers:
+                condition = (check_list_of_substring(list_cells_to_copy, layer.name)) and\
+                        (not check_list_of_substring(list_cells_not_to_copy, layer.name))
+                print('layer.name: {} -> Condition: {}'.format(layer.name, condition))
+                if condition:
+                    new_model_h.model.get_layer(layer.name).set_weights(layer.get_weights())
         # Substitute the population dictionary with the new one
         self.population_dictionary = new_population_dictionary
 
@@ -648,6 +798,12 @@ class Population():
         for model_name, model_resume in self.history.history_dict.items():
             file.write(str(model_name) + ' -> '+ str(model_resume) + '\n\n')
         # Close file
+        file.close()
+        # Write also a pickle file for history to continue evolution if needed
+        file_name = 'history_log_pickle'
+        file_path = os.path.join(self.settings.log_folder, file_name)
+        file = open(file_path, "wb")
+        pickle.dump(self.history.history_dict, file)
         file.close()
 
     def store_final_bests(self):
@@ -694,10 +850,112 @@ class Population():
             # Copy the old h5 file in the new generation folder, with the new name
             copyfile(old_model_path, model_path)
 
+    def recover_past(self, prev_history_path):
+        '''
+        Method used to restart the evolution from the previous history.
+        This is useful since the evolution might take a lot of time and it
+        may be split into different runs (i.e. from gen 1 to 5, then from
+        gen 5 to 10, and so on.)
+        Params:
+            - prev_history: path to the history_log file containing history
+                            up to the interruption.
+        '''
+        print('Set method to stop and restart evolution')
+        print('Prev history: {}'.format(self.history.history_dict))
+        # Get previous history and set it as the history of evolution
+        with open(prev_history_path, 'rb') as pickle_file:
+            self.history.history_dict = pickle.load(pickle_file)
+        pickle_file.close()
+        print('Updated history: {}'.format(self.history.history_dict))
+        # Get the value for the last generation run and update it.
+        self.generation = self.history.get_latest_generation_run()
+        self.cell_to_search = self.generation // self.gen_per_cell
+        print('Updated generation: {}'.format(self.generation))
+        # Load trained models of last generation.
+        self.load_models_of_generation(self.generation)
+        # Get to the next generation, where it is possible to resume evolution
+        # Keep only best models inside the population
+        self.keep_best_models()
+        # Update generation value
+        self.generation += 1
+        # Get new population for the next generation
+        # Check first if we need to mutate the same cell or start evolving the next cell
+        changing_cell = self.check_changing_cell()
+        print('\nChanging cell: {}'.format(changing_cell))
+        self.get_new_population(new_cell=changing_cell)
+        # Update the history log file
+        self.write_history_log()
+
+    def load_models_of_generation(self, gen_index):
+        '''
+        Method used to load in the population the models of a previously
+        trained generation. This is used whenever we need to stop and
+        restart the evolution.
+        Params:
+            - gen_index: Index of the generation where we
+                         stopped evolution previously.
+        '''
+        # Get models descriptors for models in the last trained generation.
+        descriptors = self.history.get_descriptors_of_generation(gen_index)
+        # Build all models from the descriptor and load the
+        # weights from the corresponding h5 files.
+        print('Generation: {} -> Restoring population...'.format(self.generation))
+        # Define an empty dictionary that will contain the population builders.
+        self.population_dictionary = {}
+        # Initialize the name of the first model as 1 and update them
+        index = 1
+        for name, descriptor in descriptors.items():
+            print('\nName: {} -> Descriptor: {}'.format(name, descriptor))
+            # The name of each model is of format gen_n_model_m
+            name = 'gen_{}_model_{}'.format(self.generation, index)
+            # Build the model without printing anything
+            new_model_h = ModelBuilder(cells_settings=descriptor,
+                                       filters_list=self.filters_list,
+                                       strides_list=self.strides_list,
+                                       settings=self.settings,
+                                       n_blocks=self.n_blocks,
+                                       n_blocks_per_block=self.n_blocks_per_block)
+            self.population_dictionary[name] = new_model_h
+            # Load the weights of the model from the h5 file.
+            folder_trained_models = os.path.join(self.settings.log_folder,
+                                                 self.settings.models_folder,
+                                                 'generation_{}'.format(self.generation))
+            model_name = 'model_{}'.format(index)
+            model_path = os.path.join(folder_trained_models,
+                                      '{}_trained.h5'.format(model_name))
+            new_model_h.model.load_weights(model_path)
+            # Update index
+            index += 1
+
+
+def print_all_models_weights(log_folder, mod_folder, out_file_path):
+    with open(out_file_path, 'w') as file:
+        for generation_index in range(10):
+            for model_index in range(1,11):
+                gen_folder_trained_models = os.path.join(log_folder,
+                                                         mod_folder,
+                                                         'generation_{}'.format(generation_index))
+                model_name = 'model_{}'.format(model_index)
+                model_path = os.path.join(gen_folder_trained_models,
+                                          '{}_trained.h5'.format(model_name))
+                model = keras.models.load_model(model_path)
+                file.write('\n\nGeneration {} -> Model {}'.format(generation_index, model_index))
+                for layer in model.layers:
+                    file.write('{} -> {}'.format(layer.get_config(), layer.get_weights()))
+    file.close()
 
 if __name__ == '__main__':
     args = settings_parser.arg_parse()
-    my_population = Population(args)
+
+    # Start evolution from scratch
+    #my_population = Population(args)
+
+    # Restart evolution from history
+    prev_history_path = os.path.join(args.log_folder, 'history_log_pickle')
+    my_population = Population(args, restart=True, prev_h=prev_history_path)
+
+    #out_file = os.path.join(args.log_folder, 'models weights.txt')
+    #print_all_models_weights(args.log_folder, args.models_folder, out_file)
 
     # Import cifar10
     cifar10_data = get_generator_from_cifar(args, split_train=True, small=False)

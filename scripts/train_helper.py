@@ -12,7 +12,7 @@ import settings_parser
 
 def get_standard_callbacks(args, model_path, initializer=False, scheduler=True,
                            plateau=False, printer=False, stopper=False,
-                           nan=True, board=True, storer=True):
+                           nan=True, board=False, storer=True):
     '''
     Function that sets up standard callbacks used during the training of a model.
     Params:

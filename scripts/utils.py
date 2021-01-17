@@ -241,3 +241,9 @@ def plot_image_from_generator(generator, name):
     img = generator.next()[0][0]
     plt.imshow(img)
     plt.savefig(name)
+
+def check_list_of_substring(list_of_substrings, string):
+    for substring in list_of_substrings:
+        if substring in string:
+            return True
+    return False
