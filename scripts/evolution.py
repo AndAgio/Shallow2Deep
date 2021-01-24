@@ -592,11 +592,11 @@ class Population():
                                                          self.settings.models_folder,
                                                          'generation_{}'.format(old_generation))
             old_model_name = 'model_{}'.format(old_name.split('_')[-1])
-            print('Previous best name: {}'.format(old_model_name))
+            #print('Previous best name: {}'.format(old_model_name))
             old_model_path = os.path.join(old_gen_folder_trained_models,
                                           '{}_trained.h5'.format(old_model_name))
-            print('Previous best path: {}'.format(old_model_path))
-            print('Previous best descriptor: {}'.format(cells_settings))
+            #print('Previous best path: {}'.format(old_model_path))
+            #print('Previous best descriptor: {}'.format(cells_settings))
             #new_model_h.model.set_weights(old_model_path)
             old_model = keras.models.load_model(old_model_path)
             # Copy weights of all cells
@@ -656,17 +656,9 @@ class Population():
                 list_cells_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search)]
                 list_cells_not_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search,
                                                                              self.n_cells)]
-                print('Cells to copy: {}'.format(list_cells_to_copy))
-                print('\nOld model descriptor: {}'.format(models_to_clone[old_name].get_model_descriptor()))
-                print('New model descriptor: {}\n'.format(new_model_h.get_model_descriptor()))
-                print('\n\nNew model layers:')
-                for layer in new_model_h.model.layers:
-                    print('Layer name: {}'.format(layer.name))
-                print('\n\nOld model layers:')
                 for layer in old_model.layers:
                     condition = (check_list_of_substring(list_cells_to_copy, layer.name)) and\
                             (not check_list_of_substring(list_cells_not_to_copy, layer.name))
-                    print('layer.name: {} -> Condition: {}'.format(layer.name, condition))
                     if condition:
                         new_model_h.model.get_layer(layer.name).set_weights(layer.get_weights())
             else:
@@ -716,11 +708,9 @@ class Population():
                 list_cells_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search)]
                 list_cells_not_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search,
                                                                              self.n_cells)]
-                print('Cells to copy: {}'.format(list_cells_to_copy))
                 for layer in old_model.layers:
                     condition = (check_list_of_substring(list_cells_to_copy, layer.name)) and\
                             (not check_list_of_substring(list_cells_not_to_copy, layer.name))
-                    print('layer.name: {} -> Condition: {}'.format(layer.name, condition))
                     if condition:
                         new_model_h.model.get_layer(layer.name).set_weights(layer.get_weights())
             else:
@@ -766,21 +756,16 @@ class Population():
                                                          self.settings.models_folder,
                                                          'generation_{}'.format(old_generation))
             old_model_name = 'model_{}'.format(old_name.split('_')[-1])
-            print('Previous best name: {}'.format(old_model_name))
             old_model_path = os.path.join(old_gen_folder_trained_models,
                                           '{}_trained.h5'.format(old_model_name))
-            print('Previous best path: {}'.format(old_model_path))
-            print('Previous best descriptor: {}'.format(cells_settings))
             old_model = keras.models.load_model(old_model_path)
             # Copy weights of previous cells
             list_cells_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search)]
             list_cells_not_to_copy = ['cell_{}'.format(i) for i in range(self.cell_to_search,
                                                                          self.n_cells)]
-            print('Cells to copy: {}'.format(list_cells_to_copy))
             for layer in old_model.layers:
                 condition = (check_list_of_substring(list_cells_to_copy, layer.name)) and\
                         (not check_list_of_substring(list_cells_not_to_copy, layer.name))
-                print('layer.name: {} -> Condition: {}'.format(layer.name, condition))
                 if condition:
                     new_model_h.model.get_layer(layer.name).set_weights(layer.get_weights())
         # Substitute the population dictionary with the new one
@@ -860,17 +845,13 @@ class Population():
             - prev_history: path to the history_log file containing history
                             up to the interruption.
         '''
-        print('Set method to stop and restart evolution')
-        print('Prev history: {}'.format(self.history.history_dict))
         # Get previous history and set it as the history of evolution
         with open(prev_history_path, 'rb') as pickle_file:
             self.history.history_dict = pickle.load(pickle_file)
         pickle_file.close()
-        print('Updated history: {}'.format(self.history.history_dict))
         # Get the value for the last generation run and update it.
         self.generation = self.history.get_latest_generation_run()
         self.cell_to_search = self.generation // self.gen_per_cell
-        print('Updated generation: {}'.format(self.generation))
         # Load trained models of last generation.
         self.load_models_of_generation(self.generation)
         # Get to the next generation, where it is possible to resume evolution
@@ -881,7 +862,6 @@ class Population():
         # Get new population for the next generation
         # Check first if we need to mutate the same cell or start evolving the next cell
         changing_cell = self.check_changing_cell()
-        print('\nChanging cell: {}'.format(changing_cell))
         self.get_new_population(new_cell=changing_cell)
         # Update the history log file
         self.write_history_log()

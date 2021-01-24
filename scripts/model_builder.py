@@ -1313,11 +1313,11 @@ class CellStructure():
         previous cell, otherwise the model will drop the last cell.
         '''
         previous_cell_index = str(int(self.name) - 1)
-        print('Previous cell index: {}'.format(previous_cell_index))
+        #print('Previous cell index: {}'.format(previous_cell_index))
         if int(previous_cell_index) < 0:
             return True
         for block in cell_settings['blocks']:
-            print('Block: {}'.format(block))
+            #print('Block: {}'.format(block))
             if 'cell_{}_out'.format(previous_cell_index) in block['in']:
                 return True
         return False
