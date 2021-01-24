@@ -50,6 +50,7 @@ Thumbs.db
 
 # Virtual environments files
 nas-venv/
+drawio/
 log/tensorboard/
 log/*/tensorboard/
 #log/*/models/
