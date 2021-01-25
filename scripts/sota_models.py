@@ -13,7 +13,7 @@ def mobilenet(args):
     blockPrint()
     cells_settings = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']}]},
 
-                      {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xinvmobile']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xinvmobilex1']}]},
 
                       {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['3xinvmobile']}]},
                       {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['3xinvmobile']}]},

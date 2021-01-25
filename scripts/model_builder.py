@@ -332,13 +332,23 @@ class BlockStructure():
                                                    strides=stride,
                                                    layer_name=name)
         # Check if the operation is inverted mobile bottleneck convolution
-        elif op_string in ['3xinvmobile', '5xinvmobile']:
+        elif op_string in ['3xinvmobile', '5xinvmobile', '7xinvmobile',
+                           '3xinvmobilex1','5xinvmobilex1','7xinvmobilex1',
+                           '3xinvmobilex2','5xinvmobilex2','7xinvmobilex2',
+                           '3xinvmobilex4','5xinvmobilex4','7xinvmobilex4',
+                           '3xinvmobilex6','5xinvmobilex6','7xinvmobilex6',
+                           '3xinvmobilex8','5xinvmobilex8','7xinvmobilex8']:
             # Get the corresponding kernel size
             k_size = int(op_string.split('x')[0])
+            # Get the corresponding expansion factor
+            if op_string.split('x')[-1] == 'invmobile':
+                exp_factor = 6
+            else:
+                exp_factor = int(op_string.split('x')[-1])
             # Apply the operation
             output_block = self.inverted_mobile_bottleneck_block(input_x,
                                                                  kernel_size=k_size,
-                                                                 expand_factor=6,
+                                                                 expand_factor=exp_factor,
                                                                  n_filters=self.n_filters,
                                                                  strides=stride,
                                                                  layer_name=name)
