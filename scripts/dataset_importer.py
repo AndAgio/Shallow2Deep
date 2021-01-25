@@ -35,7 +35,6 @@ def get_generator_from_cifar(arguments, split_train=False, small=False):
         y_train = y_train[:int(train_size*0.5),:]
         X_test = X_test[:int(train_size*0.5),:,:,:]
         y_test = y_test[:int(train_size*0.5),:]
-        print(y_test)
     # If split, get train shape and split train into train and validation
     if split_train:
         train_size = X_train.shape[0]
