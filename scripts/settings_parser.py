@@ -82,6 +82,10 @@ def arg_parse():
                         help="Strides values to be used in each cell")
 
 
+    parser.add_argument('--dataset', default='fashion', type=str,
+                        help="Variable describing the dataset to use."
+                             "Options are cifar, mnist, and fashion")
+
 
     args = parser.parse_args()
 
