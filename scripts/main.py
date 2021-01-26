@@ -27,6 +27,10 @@ if __name__ == '__main__':
 
     # Setup the file containing settings first
     if args.start.lower() in ('yes', 'true', 't', 'y', '1'):
+        if args.dataset in ['mnist', 'fashion']:
+            args.img_channels = 1
+        elif args.dataset in ['cifar']:
+            args.img_channels = 3
         my_population = Population(args)
         file_path = os.path.join(args.log_folder, 'continuation_settings')
         file = open(file_path, "wb")
