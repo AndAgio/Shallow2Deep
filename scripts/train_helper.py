@@ -116,7 +116,7 @@ class CustomLearningRateScheduler(keras.callbacks.Callback):
         # If decay period is bigger than total number of epochs, set learning rate to its start value
         if self.lr_decay_epochs > self.epochs:
             learning_rate = self.lr_start
-        for i in range(self.epochs // self.lr_decay_epochs):
+        for i in range(self.epochs // self.lr_decay_epochs + 1):
             interval = [i * self.lr_decay_epochs, (i + 1) * self.lr_decay_epochs - 1]
             #print('epoch: {} & interval: {}'.format(epoch, interval))
             if interval[0] <= epoch <= interval[1]:
