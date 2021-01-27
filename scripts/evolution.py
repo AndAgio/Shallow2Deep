@@ -420,7 +420,7 @@ class Population():
                           validation_data=test_gen,
                           epochs=self.settings.n_epochs,
                           callbacks=callbacks,
-                          verbose=0)
+                          verbose=1)
                 model_helper.set_to_train(False)
             else:
                 # If a model is a previous generation best, then it had already been trained.
