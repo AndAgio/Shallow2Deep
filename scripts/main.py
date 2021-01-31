@@ -57,7 +57,7 @@ if __name__ == '__main__':
     #print_all_models_weights(args.log_folder, args.models_folder, out_file)
     # Import data
     if args.dataset == 'cifar':
-        data = get_generator_from_cifar(args, split_train=True, small=True)
+        data = get_generator_from_cifar(args, split_train=True, small=False)
     elif args.dataset == 'mnist':
         data = get_generator_from_mnist(args, split_train=True, small=False)
     elif args.dataset == 'fashion':
