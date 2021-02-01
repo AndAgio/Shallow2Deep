@@ -56,3 +56,5 @@ log/*/tensorboard/
 #log/*/models/
 #log/*/trained-models/
 # scripts/unused code/
+
+log_fashion/
