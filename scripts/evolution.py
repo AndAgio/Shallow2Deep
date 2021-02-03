@@ -147,6 +147,7 @@ class History():
         Params:
             - gen_index: Index of the generation that we want to reload.
         '''
+        print('History dict: {}'.format(self.history_dict))
         descriptors = {}
         for model_name, subdict in self.history_dict.items():
             if 'gen_{}'.format(gen_index) in model_name:
