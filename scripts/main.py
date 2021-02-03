@@ -45,9 +45,7 @@ if __name__ == '__main__':
         file.close()
         # Restart evolution from history
         prev_history_path = os.path.join(args.log_folder, 'history_log_pickle')
-        print('Log folder: {}\nFilters list: {}\nStrides list: {}'.format(args.log_folder,
-                                                                          args.filters_list,
-                                                                          args.strides_list))
+        print('Log folder: {}'.format(args.log_folder))
         my_population = Population(args, restart=True, prev_h=prev_history_path)
     else:
         raise ValueError('The settings for start is not a valid setting.'

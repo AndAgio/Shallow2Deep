@@ -147,13 +147,11 @@ class History():
         Params:
             - gen_index: Index of the generation that we want to reload.
         '''
-        print('History dict: {}'.format(self.history_dict))
         descriptors = {}
         for model_name, subdict in self.history_dict.items():
-            if 'gen_{}'.format(gen_index) in model_name:
+            if 'gen_{}_'.format(gen_index) in model_name:
                 name = 'model_{}'.format(model_name.split('_')[-1])
                 descriptors[name] = subdict['Descriptor']
-                print('Name: {} and subdict: {}'.format(name, subdict))
         return descriptors
 
 class Population():
@@ -879,7 +877,6 @@ class Population():
         '''
         # Get models descriptors for models in the last trained generation.
         descriptors = self.history.get_descriptors_of_generation(gen_index)
-        print('Descriptors: {}'.format(descriptors))
         # Build all models from the descriptor and load the
         # weights from the corresponding h5 files.
         print('Generation: {} -> Restoring population...'.format(self.generation))
@@ -888,7 +885,6 @@ class Population():
         # Initialize the name of the first model as 1 and update them
         index = 1
         for name, descriptor in descriptors.items():
-            print('\nName: {} -> Descriptor: {}'.format(name, descriptor))
             # The name of each model is of format gen_n_model_m
             name = 'gen_{}_model_{}'.format(self.generation, index)
             # Build the model without printing anything
