@@ -849,7 +849,6 @@ class Population():
         with open(prev_history_path, 'rb') as pickle_file:
             self.history.history_dict = pickle.load(pickle_file)
         pickle_file.close()
-        print('History dict:\n{}'.format(self.history.history_dict))
         # Get the value for the last generation run and update it.
         self.generation = self.history.get_latest_generation_run()
         self.cell_to_search = self.generation // self.gen_per_cell
@@ -878,6 +877,7 @@ class Population():
         '''
         # Get models descriptors for models in the last trained generation.
         descriptors = self.history.get_descriptors_of_generation(gen_index)
+        print('Descriptors: {}'.format(descriptors))
         # Build all models from the descriptor and load the
         # weights from the corresponding h5 files.
         print('Generation: {} -> Restoring population...'.format(self.generation))
