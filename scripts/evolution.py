@@ -849,6 +849,7 @@ class Population():
         with open(prev_history_path, 'rb') as pickle_file:
             self.history.history_dict = pickle.load(pickle_file)
         pickle_file.close()
+        print('History dict:\n{}'.format(self.history.history_dict))
         # Get the value for the last generation run and update it.
         self.generation = self.history.get_latest_generation_run()
         self.cell_to_search = self.generation // self.gen_per_cell
