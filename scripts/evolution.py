@@ -153,6 +153,7 @@ class History():
             if 'gen_{}'.format(gen_index) in model_name:
                 name = 'model_{}'.format(model_name.split('_')[-1])
                 descriptors[name] = subdict['Descriptor']
+                print('Name: {} and subdict: {}'.format(name, subdict))
         return descriptors
 
 class Population():
