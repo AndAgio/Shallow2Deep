@@ -55,7 +55,7 @@ def plot_accs_vs_gens(accs_dict, args):
 
 def train_model_from_descriptor(descriptor, model_name, train_gen, test_gen, args):
     # Build model
-    best_model = ModelBuilder(cells_settings=best_model_descriptor,
+    model = ModelBuilder(cells_settings=descriptor,
                                filters_list=args.filters_list,
                                strides_list=args.strides_list,
                                settings=args,
@@ -70,7 +70,7 @@ def train_model_from_descriptor(descriptor, model_name, train_gen, test_gen, arg
     metrics = ['accuracy']
     loss = keras.losses.CategoricalCrossentropy()
     # Compile model using optimizer, metrics and loss
-    best_model.compile(optimizer=optimizer,
+    model.compile(optimizer=optimizer,
                       metrics=metrics,
                       loss=loss)
     # Define path where to save best model and add to callbacks
@@ -84,7 +84,7 @@ def train_model_from_descriptor(descriptor, model_name, train_gen, test_gen, arg
     callbacks = get_standard_callbacks(args, model_path)
     # Fit model and get the final testing accuracy
     print('Fitting model, this may take a while...')
-    best_model.fit(train_gen,
+    model.fit(train_gen,
               validation_data=test_gen,
               epochs=args.n_epochs,
               callbacks=callbacks,
