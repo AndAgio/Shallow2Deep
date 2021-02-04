@@ -136,10 +136,16 @@ if __name__ == '__main__':
     # Import data
     if args.dataset == 'cifar':
         train_gen, test_gen = get_generator_from_cifar(args, split_train=True, small=False)
+        args.img_channels = 3
+        args.img_shape = 32
     elif args.dataset == 'mnist':
         train_gen, test_gen = get_generator_from_mnist(args, split_train=True, small=False)
+        args.img_channels = 1
+        args.img_shape = 28
     elif args.dataset == 'fashion':
         train_gen, test_gen = get_generator_from_fashion_mnist(args, split_train=True, small=False)
+        args.img_channels = 1
+        args.img_shape = 28
     else:
         raise ValueError('Not a valid dataset!')
 
