@@ -946,11 +946,13 @@ class CellStructure():
                                         .format(self.name))(blocks_out)
         # Check cell's output shape, if it is not proper then raise an error.
         # This is done to avoid building valid cell that have strange shapes.
-        if self.check_ouput_shape():
-            self.possible_inputs = possible_inputs.copy()
-            self.possible_inputs_strings = possible_inputs_strings.copy()
-        else:
-            raise ValueError('The cell you tried to build is not valid!')
+        #if self.check_ouput_shape():
+        #    self.possible_inputs = possible_inputs.copy()
+        #    self.possible_inputs_strings = possible_inputs_strings.copy()
+        #else:
+        #    raise ValueError('The cell you tried to build is not valid!')
+        self.possible_inputs = possible_inputs.copy()
+        self.possible_inputs_strings = possible_inputs_strings.copy()
 
     def check_ouput_shape(self, addition=False):
         """
@@ -996,6 +998,7 @@ class CellStructure():
                                           self.n_blocks * self.n_filters])
             else:
                 raise ValueError('The stride selected for this cell is not valid!')
+            print('Proper shape: {} and Output shape: {}'.format(proper_shape, output_shape))
             # If output shape matches the proper shape return True.
             if output_shape == proper_shape:
                 return True

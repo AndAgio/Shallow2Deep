@@ -61,6 +61,7 @@ def train_model_from_descriptor(descriptor, model_name, train_gen, test_gen, arg
                                settings=args,
                                n_blocks=args.n_blocks_per_cell,
                                n_blocks_per_block=args.n_subblocks_per_block).get_model()
+    print('Model {} has {} M parameters'.format(model_name, get_model_parameters(model)))
     # Train the model
     # Define optimizer, metrics and loss first
     optimizer = keras.optimizers.SGD(lr=args.lr_start,
@@ -89,6 +90,40 @@ def train_model_from_descriptor(descriptor, model_name, train_gen, test_gen, arg
               epochs=args.n_epochs,
               callbacks=callbacks,
               verbose=0)
+    # Get the trained best model from the h5 file
+    trained_model = keras.models.load_model(model_path)
+    return trained_model
+
+def train_model(model, model_name, train_gen, test_gen, args):
+    print('Model {} has {} M parameters'.format(model_name, get_model_parameters(model)))
+    # Train the model
+    # Define optimizer, metrics and loss first
+    optimizer = keras.optimizers.SGD(lr=args.lr_start,
+                                     momentum=args.momentum,
+                                     decay=0.0,
+                                     nesterov=False)
+    metrics = ['accuracy']
+    loss = keras.losses.CategoricalCrossentropy()
+    # Compile model using optimizer, metrics and loss
+    model.compile(optimizer=optimizer,
+                      metrics=metrics,
+                      loss=loss)
+    # Define path where to save best model and add to callbacks
+    gen_folder_trained_models = os.path.join(args.log_folder,
+                                                  args.models_folder,
+                                                  'final')
+    if not os.path.exists(gen_folder_trained_models):
+        os.makedirs(gen_folder_trained_models)
+    model_path = os.path.join(gen_folder_trained_models,
+                              model_name + '.h5')
+    callbacks = get_standard_callbacks(args, model_path)
+    # Fit model and get the final testing accuracy
+    print('Fitting model, this may take a while...')
+    model.fit(train_gen,
+              validation_data=test_gen,
+              epochs=args.n_epochs,
+              callbacks=callbacks,
+              verbose=1)
     # Get the trained best model from the h5 file
     trained_model = keras.models.load_model(model_path)
     return trained_model
@@ -155,99 +190,110 @@ if __name__ == '__main__':
     args.lr_decay_epochs = 20
     args.lr_decay_factor = 10
 
-    # Train model with only first replicated 4 times
-    original_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']},
-                                             {'ID': '1', 'in': ['cell_0_block_0'], 'ops': ['1xconv']},
-                                             {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['3xconv']}]},
-                                 {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['5xconv']},
-                                             {'ID': '1', 'in': ['cell_1_block_0'], 'ops': ['3xconv']},
-                                             {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['5xconv']}]},
-                                 {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['3xconv']},
-                                             {'ID': '1', 'in': ['cell_1_out'], 'ops': ['5xconv']},
-                                             {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['1xconv']}]},
-                                 {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['1xconv']},
-                                             {'ID': '1', 'in': ['cell_2_out'], 'ops': ['3xconv']},
-                                             {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['1xconv']}]}]
-    model_name = 'found_best'
-    model = train_model_from_descriptor(original_model_descriptor,
-                                        model_name,
-                                        train_gen,
-                                        test_gen,
-                                        args)
-    evaluate_model(model, model_name, test_gen)
-    first_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']},
-                                          {'ID': '1', 'in': ['cell_0_block_0'], 'ops': ['1xconv']},
-                                          {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['3xconv']}]},
-                              {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xconv']},
-                                          {'ID': '1', 'in': ['cell_1_block_0'], 'ops': ['1xconv']},
-                                          {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['3xconv']}]},
-                              {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['3xconv']},
-                                          {'ID': '1', 'in': ['cell_2_block_0'], 'ops': ['1xconv']},
-                                          {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['3xconv']}]},
-                              {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['3xconv']},
-                                          {'ID': '1', 'in': ['cell_3_block_0'], 'ops': ['1xconv']},
-                                          {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['3xconv']}]}]
-    model_name = '1st_cell_x4'
-    model = train_model_from_descriptor(first_model_descriptor,
-                                        model_name,
-                                        train_gen,
-                                        test_gen,
-                                        args)
-    evaluate_model(model, model_name, test_gen)
-    second_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['5xconv']},
-                                           {'ID': '1', 'in': ['cell_0_block_0'], 'ops': ['3xconv']},
-                                           {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['5xconv']}]},
-                               {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['5xconv']},
-                                           {'ID': '1', 'in': ['cell_1_block_0'], 'ops': ['3xconv']},
-                                           {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['5xconv']}]},
-                               {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['5xconv']},
-                                           {'ID': '1', 'in': ['cell_2_block_0'], 'ops': ['3xconv']},
-                                           {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['5xconv']}]},
-                               {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['5xconv']},
-                                           {'ID': '1', 'in': ['cell_3_block_0'], 'ops': ['3xconv']},
-                                           {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['5xconv']}]}]
-    model_name = '2nd_cell_x4'
-    model = train_model_from_descriptor(second_model_descriptor,
-                                         model_name,
-                                         train_gen,
-                                         test_gen,
-                                         args)
-    evaluate_model(model, model_name, test_gen)
-    third_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']},
-                                          {'ID': '1', 'in': ['model_input'], 'ops': ['5xconv']},
-                                          {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['1xconv']}]},
-                              {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xconv']},
-                                          {'ID': '1', 'in': ['cell_0_out'], 'ops': ['5xconv']},
-                                          {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['1xconv']}]},
-                              {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['3xconv']},
-                                          {'ID': '1', 'in': ['cell_1_out'], 'ops': ['5xconv']},
-                                          {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['1xconv']}]},
-                              {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['3xconv']},
-                                          {'ID': '1', 'in': ['cell_2_out'], 'ops': ['5xconv']},
-                                          {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['1xconv']}]}]
-    model_name = '3rd_cell_x4'
-    model = train_model_from_descriptor(third_model_descriptor,
-                                        model_name,
-                                        train_gen,
-                                        test_gen,
-                                        args)
-    evaluate_model(model, model_name, test_gen)
-    fourth_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['1xconv']},
-                                           {'ID': '1', 'in': ['model_input'], 'ops': ['3xconv']},
-                                           {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['1xconv']}]},
-                               {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['1xconv']},
-                                           {'ID': '1', 'in': ['cell_0_out'], 'ops': ['3xconv']},
-                                           {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['1xconv']}]},
-                               {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['1xconv']},
-                                           {'ID': '1', 'in': ['cell_1_out'], 'ops': ['3xconv']},
-                                           {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['1xconv']}]},
-                               {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['1xconv']},
-                                           {'ID': '1', 'in': ['cell_2_out'], 'ops': ['3xconv']},
-                                           {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['1xconv']}]}]
-    model_name = '4th_cell_x4'
-    model = train_model_from_descriptor(fourth_model_descriptor,
-                                         model_name,
-                                         train_gen,
-                                         test_gen,
-                                         args)
-    evaluate_model(model, model_name, test_gen)
+    if False:
+        # Train model with only first replicated 4 times
+        original_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']},
+                                                 {'ID': '1', 'in': ['cell_0_block_0'], 'ops': ['1xconv']},
+                                                 {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['3xconv']}]},
+                                     {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['5xconv']},
+                                                 {'ID': '1', 'in': ['cell_1_block_0'], 'ops': ['3xconv']},
+                                                 {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['5xconv']}]},
+                                     {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['3xconv']},
+                                                 {'ID': '1', 'in': ['cell_1_out'], 'ops': ['5xconv']},
+                                                 {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['1xconv']}]},
+                                     {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['1xconv']},
+                                                 {'ID': '1', 'in': ['cell_2_out'], 'ops': ['3xconv']},
+                                                 {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['1xconv']}]}]
+        model_name = 'found_best'
+        model_found = train_model_from_descriptor(original_model_descriptor,
+                                            model_name,
+                                            train_gen,
+                                            test_gen,
+                                            args)
+        evaluate_model(model_found, model_name, test_gen)
+        first_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']},
+                                              {'ID': '1', 'in': ['cell_0_block_0'], 'ops': ['1xconv']},
+                                              {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['3xconv']}]},
+                                  {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xconv']},
+                                              {'ID': '1', 'in': ['cell_1_block_0'], 'ops': ['1xconv']},
+                                              {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['3xconv']}]},
+                                  {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['3xconv']},
+                                              {'ID': '1', 'in': ['cell_2_block_0'], 'ops': ['1xconv']},
+                                              {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['3xconv']}]},
+                                  {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['3xconv']},
+                                              {'ID': '1', 'in': ['cell_3_block_0'], 'ops': ['1xconv']},
+                                              {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['3xconv']}]}]
+        model_name = '1st_cell_x4'
+        model = train_model_from_descriptor(first_model_descriptor,
+                                            model_name,
+                                            train_gen,
+                                            test_gen,
+                                            args)
+        evaluate_model(model, model_name, test_gen)
+        second_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['5xconv']},
+                                               {'ID': '1', 'in': ['cell_0_block_0'], 'ops': ['3xconv']},
+                                               {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['5xconv']}]},
+                                   {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['5xconv']},
+                                               {'ID': '1', 'in': ['cell_1_block_0'], 'ops': ['3xconv']},
+                                               {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['5xconv']}]},
+                                   {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['5xconv']},
+                                               {'ID': '1', 'in': ['cell_2_block_0'], 'ops': ['3xconv']},
+                                               {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['5xconv']}]},
+                                   {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['5xconv']},
+                                               {'ID': '1', 'in': ['cell_3_block_0'], 'ops': ['3xconv']},
+                                               {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['5xconv']}]}]
+        model_name = '2nd_cell_x4'
+        model = train_model_from_descriptor(second_model_descriptor,
+                                             model_name,
+                                             train_gen,
+                                             test_gen,
+                                             args)
+        evaluate_model(model, model_name, test_gen)
+        third_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']},
+                                              {'ID': '1', 'in': ['model_input'], 'ops': ['5xconv']},
+                                              {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['1xconv']}]},
+                                  {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xconv']},
+                                              {'ID': '1', 'in': ['cell_0_out'], 'ops': ['5xconv']},
+                                              {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['1xconv']}]},
+                                  {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['3xconv']},
+                                              {'ID': '1', 'in': ['cell_1_out'], 'ops': ['5xconv']},
+                                              {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['1xconv']}]},
+                                  {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['3xconv']},
+                                              {'ID': '1', 'in': ['cell_2_out'], 'ops': ['5xconv']},
+                                              {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['1xconv']}]}]
+        model_name = '3rd_cell_x4'
+        model = train_model_from_descriptor(third_model_descriptor,
+                                            model_name,
+                                            train_gen,
+                                            test_gen,
+                                            args)
+        evaluate_model(model, model_name, test_gen)
+        fourth_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['1xconv']},
+                                               {'ID': '1', 'in': ['model_input'], 'ops': ['3xconv']},
+                                               {'ID': '2', 'in': ['cell_0_block_1'], 'ops': ['1xconv']}]},
+                                   {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['1xconv']},
+                                               {'ID': '1', 'in': ['cell_0_out'], 'ops': ['3xconv']},
+                                               {'ID': '2', 'in': ['cell_1_block_1'], 'ops': ['1xconv']}]},
+                                   {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['1xconv']},
+                                               {'ID': '1', 'in': ['cell_1_out'], 'ops': ['3xconv']},
+                                               {'ID': '2', 'in': ['cell_2_block_1'], 'ops': ['1xconv']}]},
+                                   {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['1xconv']},
+                                               {'ID': '1', 'in': ['cell_2_out'], 'ops': ['3xconv']},
+                                               {'ID': '2', 'in': ['cell_3_block_1'], 'ops': ['1xconv']}]}]
+        model_name = '4th_cell_x4'
+        model = train_model_from_descriptor(fourth_model_descriptor,
+                                             model_name,
+                                             train_gen,
+                                             test_gen,
+                                             args)
+        evaluate_model(model, model_name, test_gen)
+
+
+        # Define VGG and ResNet
+        vgg = vgg_fashion(args)
+        vgg = train_model(vgg, 'VGG', train_gen, test_gen, args)
+        evaluate_model(vgg, 'VGG', test_gen)
+
+    resnet = resnet_fashion(args)
+    resnet = train_model(resnet, 'ResNet', train_gen, test_gen, args)
+    evaluate_model(resnet, 'ResNet', test_gen)

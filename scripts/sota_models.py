@@ -84,3 +84,65 @@ def vgg(args):
     enablePrint()
 
     return model_helper.get_model()
+
+
+def vgg_fashion(args):
+    # VGG like module
+    filt_list =    [48, 48, 48, 96, 96, 96, 96, 96, 96, 192, 192, 192]
+    strides_list = [1,  1,  1,  2,  1,  1,  1,  1,  1,  2,   1,   1]
+    n_blocks = 1
+    n_blocks_per_block = 1
+    # Build the model with the helper
+    cells_settings = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_3_out'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_4_out'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_5_out'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_6_out'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_7_out'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_8_out'], 'ops': ['3xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_9_out'], 'ops': ['1xconv']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_10_out'], 'ops': ['1xconv']}]}]
+
+    model_helper = ModelBuilder(cells_settings=cells_settings,
+                                filters_list=filt_list,
+                                strides_list=strides_list,
+                                settings=args,
+                                n_blocks=n_blocks,
+                                n_blocks_per_block=n_blocks_per_block)
+
+
+    return model_helper.get_model()
+
+
+def resnet_fashion(args):
+    # VGG like module
+    filt_list =    [64, 64, 128, 128, 256, 256]
+    strides_list = [1,  1,  2,  1,  2,  1]
+    n_blocks = 2
+    n_blocks_per_block = 1
+    # Build the model with the helper
+    cells_settings = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']},
+                                  {'ID': '1', 'in': ['model_input'], 'ops': ['identity']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xconv']},
+                                  {'ID': '1', 'in': ['cell_0_out'], 'ops': ['identity']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_1_out'], 'ops': ['3xconv']},
+                                  {'ID': '1', 'in': ['cell_1_out'], 'ops': ['identity']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_2_out'], 'ops': ['3xconv']},
+                                  {'ID': '1', 'in': ['cell_2_out'], 'ops': ['identity']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_3_out'], 'ops': ['3xconv']},
+                                  {'ID': '1', 'in': ['cell_3_out'], 'ops': ['identity']}]},
+                      {'blocks': [{'ID': '0', 'in': ['cell_4_out'], 'ops': ['1xconv']},
+                                  {'ID': '1', 'in': ['cell_4_out'], 'ops': ['identity']}]}]
+
+    model_helper = ModelBuilder(cells_settings=cells_settings,
+                                filters_list=filt_list,
+                                strides_list=strides_list,
+                                settings=args,
+                                n_blocks=n_blocks,
+                                n_blocks_per_block=n_blocks_per_block)
+
+
+    return model_helper.get_model()

@@ -68,3 +68,9 @@ def get_memory_footprint(model):
     '''
     params = model.count_params()
     return params * 24 / 1e6
+
+def get_model_parameters(model):
+    return model.count_params()/1e6
+
+def print_model_parameters(model):
+    print('Model parameters: {}'.format(model.count_params()/1e6))
