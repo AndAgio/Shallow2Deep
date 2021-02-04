@@ -101,36 +101,37 @@ def evaluate_model(model, model_name, test_gen):
 if __name__ == '__main__':
     args = settings_parser.arg_parse()
 
-    # Get file containing history log
-    file_path = os.path.join(args.log_folder, 'history_log_pickle')
-    file = open(file_path, "rb")
-    history = pickle.load(file)
-    file.close()
+    if False:
+        # Get file containing history log
+        file_path = os.path.join(args.log_folder, 'history_log_pickle')
+        file = open(file_path, "rb")
+        history = pickle.load(file)
+        file.close()
 
-    #Restore settings
-    file_path = os.path.join(args.log_folder, 'continuation_settings')
-    file = open(file_path, "rb")
-    args = pickle.load(file)
-    file.close()
+        #Restore settings
+        file_path = os.path.join(args.log_folder, 'continuation_settings')
+        file = open(file_path, "rb")
+        args = pickle.load(file)
+        file.close()
 
-    # Create dictionary containing the name and accuracies of models
-    accs_dict = {}
-    for name, subdict in history.items():
-        accs_dict[name] = subdict['Accuracy']
+        # Create dictionary containing the name and accuracies of models
+        accs_dict = {}
+        for name, subdict in history.items():
+            accs_dict[name] = subdict['Accuracy']
 
-    plot_accs_vs_gens(accs_dict, args)
+        plot_accs_vs_gens(accs_dict, args)
 
-    # Get name of model with highest accuracy and its structure
-    best_name = max(accs_dict, key=accs_dict.get)
-    best_model_descriptor = history[best_name]['Descriptor']
+        # Get name of model with highest accuracy and its structure
+        best_name = max(accs_dict, key=accs_dict.get)
+        best_model_descriptor = history[best_name]['Descriptor']
 
-    # Build model
-    best_model = ModelBuilder(cells_settings=best_model_descriptor,
-                               filters_list=args.filters_list,
-                               strides_list=args.strides_list,
-                               settings=args,
-                               n_blocks=args.n_blocks_per_cell,
-                               n_blocks_per_block=args.n_subblocks_per_block).get_model()
+        # Build model
+        best_model = ModelBuilder(cells_settings=best_model_descriptor,
+                                   filters_list=args.filters_list,
+                                   strides_list=args.strides_list,
+                                   settings=args,
+                                   n_blocks=args.n_blocks_per_cell,
+                                   n_blocks_per_block=args.n_subblocks_per_block).get_model()
 
     # Import data
     if args.dataset == 'cifar':
