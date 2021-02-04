@@ -123,7 +123,7 @@ def train_model(model, model_name, train_gen, test_gen, args):
               validation_data=test_gen,
               epochs=args.n_epochs,
               callbacks=callbacks,
-              verbose=1)
+              verbose=0)
     # Get the trained best model from the h5 file
     trained_model = keras.models.load_model(model_path)
     return trained_model
@@ -190,7 +190,7 @@ if __name__ == '__main__':
     args.lr_decay_epochs = 20
     args.lr_decay_factor = 10
 
-    if False:
+    if True:
         # Train model with only first replicated 4 times
         original_model_descriptor = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']},
                                                  {'ID': '1', 'in': ['cell_0_block_0'], 'ops': ['1xconv']},
@@ -289,10 +289,10 @@ if __name__ == '__main__':
         evaluate_model(model, model_name, test_gen)
 
 
-        # Define VGG and ResNet
-        vgg = vgg_fashion(args)
-        vgg = train_model(vgg, 'VGG', train_gen, test_gen, args)
-        evaluate_model(vgg, 'VGG', test_gen)
+    # Define VGG and ResNet
+    vgg = vgg_fashion(args)
+    vgg = train_model(vgg, 'VGG', train_gen, test_gen, args)
+    evaluate_model(vgg, 'VGG', test_gen)
 
     resnet = resnet_fashion(args)
     resnet = train_model(resnet, 'ResNet', train_gen, test_gen, args)
