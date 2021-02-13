@@ -50,7 +50,7 @@ def plot_accs_vs_gens(accs_dict, args):
     plt.xlabel('Generation')
     plt.ylabel('Accuracy')
     axes = plt.gca()
-    axes.set_ylim([0.85,1])
+    axes.set_ylim([0.8,1])
     plt.show()
 
 def train_model_from_descriptor(descriptor, model_name, train_gen, test_gen, args):

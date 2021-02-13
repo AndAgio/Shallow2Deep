@@ -9,3 +9,6 @@ python main.py --start="true" --gen_per_batch=1 --batch_size=2048 --n_cells=5 --
 
 Successive runs:
 python main.py
+
+Post process
+python process_log.py --dataset="fashion" --log_folder="../log_fashion"
