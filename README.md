@@ -28,5 +28,7 @@ A set of parameters can be specified to select NN depth, the complexity of the c
 * `lr_decay_factor` identifies the factor by which the leraning rate is decayed after `lr_decay_epochs` epochs---e.g. `lr_new = lr_old / lr_decay_factor`.
 * `batch_size` specifies the size of the batches used during training.
 
-Post process
+### Post process
+```
 python process_log.py --dataset="fashion" --log_folder="../log_fashion"
+```
