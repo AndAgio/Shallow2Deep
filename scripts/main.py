@@ -64,6 +64,6 @@ if __name__ == '__main__':
         raise ValueError('Not a valid dataset!')
 
     # Run evolution
-    #my_population.run_evolution(data)
+    my_population.run_evolution(data)
     # Run batched evolution
-    my_population.run_batched_evolution(data)
+    #my_population.run_batched_evolution(data)
