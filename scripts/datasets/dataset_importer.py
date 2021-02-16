@@ -11,7 +11,7 @@ from keras.datasets import cifar10, mnist, fashion_mnist
 from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import np_utils
 # Import from files
-import settings_parser
+from ..settings import settings_parser
 
 
 def get_generator_from_cifar(arguments, split_train=False, small=False):

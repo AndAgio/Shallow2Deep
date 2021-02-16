@@ -33,9 +33,9 @@ def arg_parse():
                         help="Probability of mutating operations of a block during a model evolution")
 
     # Parameters used for paths to folders
-    parser.add_argument('--log_folder', type=str, default='../log',
+    parser.add_argument('--log_folder', type=str, default='log',
                         help='Path of folder where logs are stored')
-    parser.add_argument('--search_space_path', type=str, default='../search_space.txt',
+    parser.add_argument('--search_space_path', type=str, default='search_space.txt',
                         help="Path of text file containing search space dictionary")
     parser.add_argument('--models_folder', type=str, default='trained-models',
                         help="Path to model file")

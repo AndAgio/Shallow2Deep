@@ -12,14 +12,13 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import np_utils
 from tensorflow.python.keras.engine import data_adapter
 # Imported from files
-import settings_parser
-from utils import *
-from dataset_importer import *
-from sota_models import *
-from train_helper import *
-from model_footprint import *
-from model_builder import ModelBuilder
-from evolution import Population
+from scripts.settings import settings_parser
+from scripts.utils import *
+from scripts.datasets import *
+from scripts.models import *
+from scripts.train_helper import *
+from scripts.model_builder import ModelBuilder
+from scripts.evolution import Population
 
 
 if __name__ == '__main__':

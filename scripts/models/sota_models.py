@@ -1,7 +1,6 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-from utils import blockPrint, enablePrint
-from model_builder import ModelBuilder
+from ..model_builder import ModelBuilder
 
 def mobilenet(args):
     # Mobile Net like module
@@ -10,7 +9,6 @@ def mobilenet(args):
     n_blocks = 1
     n_blocks_per_block = 1
     # Build the model with the helper
-    blockPrint()
     cells_settings = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']}]},
 
                       {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xinvmobilex1']}]},
@@ -46,8 +44,6 @@ def mobilenet(args):
                                 n_blocks=n_blocks,
                                 n_blocks_per_block=n_blocks_per_block)
 
-    enablePrint()
-
     return model_helper.get_model()
 
 
@@ -58,7 +54,6 @@ def vgg(args):
     n_blocks = 1
     n_blocks_per_block = 1
     # Build the model with the helper
-    blockPrint()
     cells_settings = [{'blocks': [{'ID': '0', 'in': ['model_input'], 'ops': ['3xconv']}]},
                       {'blocks': [{'ID': '0', 'in': ['cell_0_out'], 'ops': ['3xmax']}]},
 
@@ -80,8 +75,6 @@ def vgg(args):
                                 settings=args,
                                 n_blocks=n_blocks,
                                 n_blocks_per_block=n_blocks_per_block)
-
-    enablePrint()
 
     return model_helper.get_model()
 

@@ -12,14 +12,13 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import np_utils
 from tensorflow.python.keras.engine import data_adapter
 # Imported from files
-import settings_parser
-from utils import *
-from dataset_importer import *
-from sota_models import *
-from train_helper import *
-from model_footprint import *
-from model_builder import ModelBuilder
-from evolution import Population
+from ..utils import *
+from ..settings import settings_parser
+from ..datasets import *
+from ..models import *
+from ..train_helper import *
+from ..model_builder import ModelBuilder
+from ..evolution import Population
 
 
 def plot_accs_vs_gens(accs_dict, args):

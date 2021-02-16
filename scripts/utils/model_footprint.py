@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 # Import from files
-import settings_parser
+from ..settings import settings_parser
 
 
 def keras_model_memory_usage_in_bytes(model, *, batch_size: int):

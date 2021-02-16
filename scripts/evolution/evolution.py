@@ -13,12 +13,11 @@ import tensorflow as tf
 import keras
 from keras.utils import plot_model
 # Imported from files
-import settings_parser
-from utils import *
-from dataset_importer import *
-from train_helper import *
-from model_footprint import get_memory_footprint
-from model_builder import ModelBuilder, SearchSpace
+from ..settings import settings_parser
+from ..utils import *
+from ..datasets import *
+from ..train_helper import *
+from ..model_builder import ModelBuilder, SearchSpace
 
 
 class History():

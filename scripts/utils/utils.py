@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 # Import from files
-import settings_parser
+from ..settings import settings_parser
 
 
 def print_progress_bar(iteration, total, prefix='', suffix='',

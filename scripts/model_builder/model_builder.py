@@ -15,10 +15,9 @@ from keras.layers import Dropout, Flatten, Dense, Conv2D, SeparableConv2D, ReLU
 from keras.layers import MaxPooling2D, Activation, BatchNormalization, Concatenate
 from keras.layers import AveragePooling2D, DepthwiseConv2D, GlobalAveragePooling2D
 # Import from files
-import settings_parser
-from utils import *
-from train_helper import *
-from model_footprint import get_memory_footprint
+from ..settings import settings_parser
+from ..utils import *
+from ..train_helper import *
 
 
 class SearchSpace():
@@ -998,7 +997,6 @@ class CellStructure():
                                           self.n_blocks * self.n_filters])
             else:
                 raise ValueError('The stride selected for this cell is not valid!')
-            print('Proper shape: {} and Output shape: {}'.format(proper_shape, output_shape))
             # If output shape matches the proper shape return True.
             if output_shape == proper_shape:
                 return True

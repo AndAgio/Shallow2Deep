@@ -8,7 +8,7 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 # Import from files
-import settings_parser
+from ..settings import settings_parser
 
 def get_standard_callbacks(args, model_path, initializer=False, scheduler=True,
                            plateau=False, printer=False, stopper=False,
