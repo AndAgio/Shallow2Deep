@@ -58,3 +58,4 @@ log/*/tensorboard/
 # scripts/unused code/
 
 log_fashion/
+log_cifar/
