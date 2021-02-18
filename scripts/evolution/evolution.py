@@ -194,10 +194,13 @@ class Population():
         # Define how the cells settings should look like for each model in the population.
         # The first cell is built randomly, all other cells are just 3xconv.
         cells_settings = [None]
-        for i in range(0, self.n_cells-1):
-            cells_settings.append({'blocks': [{'ID': '0',
-                                               'in': ['cell_{}_out'.format(i)],
-                                               'ops': ['3xconv']}]})
+        if self.args.progressive_depth.lower() in ('yes', 'true', 't', 'y', '1'):
+            print('Work in progress!')
+        else:
+            for i in range(0, self.n_cells-1):
+                cells_settings.append({'blocks': [{'ID': '0',
+                                                   'in': ['cell_{}_out'.format(i)],
+                                                   'ops': ['3xconv']}]})
         # Initialize the name of the first model as 1 and update them
         index = 1
         # Build random models and check if they can be added to the population

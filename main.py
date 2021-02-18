@@ -66,4 +66,3 @@ if __name__ == '__main__':
     my_population.run_evolution(data)
     # Run batched evolution
     #my_population.run_batched_evolution(data)
-    print('hello')

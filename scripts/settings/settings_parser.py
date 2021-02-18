@@ -65,6 +65,8 @@ def arg_parse():
     parser.add_argument('--start', default='False', type=str,
                         help="Variable describing if the evolution needs to start"
                              "from scratch or if it needs to be restored from the last run checkpoint.")
+    parser.add_argument('--progressive_depth', default='False', type=str,
+                        help="True if the value of C is searched iteratively, False otherwise.")
 
 
     # Parameters used for single model building
