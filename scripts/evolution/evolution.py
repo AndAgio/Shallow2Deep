@@ -194,8 +194,10 @@ class Population():
         # Define how the cells settings should look like for each model in the population.
         # The first cell is built randomly, all other cells are just 3xconv.
         cells_settings = [None]
-        if self.args.progressive_depth.lower() in ('yes', 'true', 't', 'y', '1'):
+        if self.settings.progressive_depth.lower() in ('yes', 'true', 't', 'y', '1'):
             print('Work in progress!')
+            # Nothing should be done here
+            pass
         else:
             for i in range(0, self.n_cells-1):
                 cells_settings.append({'blocks': [{'ID': '0',
@@ -381,7 +383,7 @@ class Population():
         '''
         # Train all models belonging to the population of this generation
         index_fitting = 1
-        prefix_string = 'Generation: {} -> Fitting population: '.format(self.generation)
+        prefix_string = 'Generation: {}/{} -> Fitting population:'.format(self.generation, self.n_cells*self.gen_per_cell)
         for name, model_helper in self.population_dictionary.items():
             suffix_string = ' Model {}/{}'.format(index_fitting,
                                                   len(self.population_dictionary.keys()))
@@ -741,8 +743,12 @@ class Population():
             name = 'gen_{}_model_{}'.format(self.generation, index)
             old_name = list(self.population_dictionary.keys())[index - 1]
             cells_settings = self.population_dictionary[old_name].get_model_descriptor()
-            # Define random cell settings for the new cell to search
-            cells_settings[self.cell_to_search] = None
+            # If C is progressive then append an empty cell to be searched
+            if self.settings.progressive_depth.lower() in ('yes', 'true', 't', 'y', '1'):
+                cells_settings.append(None)
+            # Else set to random the new cell settings for the new cell to search
+            else:
+                cells_settings[self.cell_to_search] = None
             # Build the cloned models using ModelBuilder from cells settings
             new_model_h = ModelBuilder(cells_settings=cells_settings,
                                        filters_list=self.filters_list,

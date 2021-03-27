@@ -59,3 +59,7 @@ log/*/tensorboard/
 
 log_fashion/
 log_cifar/
+log/
+log_progressive/
+log_progressive_fashion/
+log_*/
